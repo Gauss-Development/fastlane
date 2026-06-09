@@ -1,66 +1,145 @@
-# Search Service Rollout and Backfill Procedure
+# Fiberlane Hybrid Search Rollout
 
-This document describes the phased rollout and backfill strategy for the search service and discovery features.
+This document describes the current Fiberlane MVP search path. The old
+microblog/OpenSearch/Kafka search has been replaced by hybrid AI product search:
 
-## Prerequisites
+```
+Next.js buyer UI
+  → POST /api/bff/search
+  → api-gateway POST /api/v1/search
+  → search-service gRPC Search
+  → Claude spec extraction + query embedding + pgvector catalog ranking
+```
 
-- Follow schema deployed (user-service migrations applied).
-- OpenSearch and Kafka available in the target environment (see `docker-compose.yml` and env configuration).
+## Runtime architecture
 
-## Phase 1: Deploy follow schema and user-service
+1. **Buyer input** — the dashboard (`/dashboard`) and results page (`/search?q=...`)
+   submit a natural-language photonics query.
+2. **BFF** — `frontend/src/app/api/bff/search/route.ts` accepts:
 
-1. Apply user-service migrations so the `follows` table exists.
-2. Deploy user-service with follow APIs (Follow, Unfollow, GetFollowers, GetFollowing, AreFollowed).
-3. Verify follow endpoints via gateway (e.g. `POST/GET/DELETE /api/v1/users/:id/follow`, followers/following lists).
-4. No frontend or search changes in this phase.
+   ```json
+   {
+     "query": "100G QSFP28 LR4 Cisco compatible",
+     "limit": 20,
+     "spec_overrides": null
+   }
+   ```
 
-## Phase 2: Deploy search infra and search-service
+   It forwards the authenticated request to the gateway.
+3. **Gateway** — `POST /api/v1/search` maps the JSON body into
+   `search.v1.SearchRequest`.
+4. **Search service** pipeline:
+   - Claude tool-use extracts structured transceiver specs.
+   - Query embeddings use Voyage `voyage-3` first, OpenAI fallback if configured.
+   - `products.embedding <=> query_embedding` ranks catalog candidates in pgvector.
+   - Extracted specs boost/re-rank the vector candidates.
+   - Claude generates one-line match explanations for the top hits.
+5. **Frontend results** — response contains `parsed_specs`, `results[]`, and
+   `query_id`. The results page renders editable spec chips; removing/adding a
+   chip re-runs search via `spec_overrides`.
 
-1. Start OpenSearch and Kafka (e.g. `make infra-up` or equivalent).
-2. Deploy search-service with:
-   - `OPENSEARCH_URL`, `KAFKA_BROKERS`, `USER_SERVICE_GRPC_ADDR` and related env set.
-   - Index bootstrap will create `users_index` and `posts_index` on first run.
-3. Ensure search-service health check passes and Kafka consumer group is registered.
-4. Do **not** enable the gateway search route or frontend discovery yet.
+## Required services
 
-## Phase 3: Enable event publishing (backfill feed)
+- `postgres_post` — owns suppliers/products/embeddings.
+- `redis` — optional cache for spec extraction, embeddings, and explanations.
+- `search-service` — gRPC on `:50054`.
+- `api-gateway` — HTTP edge gateway.
+- `frontend` — Next.js app.
 
-1. **User-service**: Publish to Kafka topic `search.users` on user create/update/delete with the agreed JSON contract (`entity_type`, `event_type`, `entity_id`, `payload`, `timestamp`, `message_id`).
-2. **Post-service**: In addition to existing RabbitMQ, publish to Kafka topic `search.posts` for post created/updated/deleted with the same contract shape.
-3. Run a **backfill** (one-time or script):
-   - Export all users from user-service and post each as a `user.created` (or `user.updated`) event to `search.users`.
-   - Export all posts from post-service and post each as a `post.created` (or `post.updated`) event to `search.posts`.
-4. Wait for consumer lag to drain (e.g. monitor Kafka consumer group lag). Target freshness: 1–3 minutes for backfill completion.
+OpenSearch and Kafka are not required for the Fiberlane search MVP.
 
-## Phase 4: Enable gateway search route and frontend
+## Environment variables
 
-1. Configure api-gateway with `SEARCH_SERVICE_GRPC_ADDR` pointing at search-service.
-2. Enable the protected route `GET /api/v1/search` (already wired; ensure gateway is restarted/redeployed with config).
-3. Deploy frontend with BFF search proxy (`/api/bff/search`) and discovery UI (Discover tab, cursor-based results, Subscribe/Unsubscribe).
-4. Smoke-test: authenticated user runs a search and sees grouped users and posts; load more and follow/unfollow work.
+### search-service
 
-## Phase 5: Deprecate or proxy legacy search (optional)
+- `CATALOG_DATABASE_URL` — read-only catalog DB connection. In compose this points
+  to `postgres_post`.
+- `REDIS_URL` — optional cache.
+- `ANTHROPIC_API_KEY` — enables Claude spec extraction and match explanations.
+- `ANTHROPIC_MODEL` — defaults to `claude-haiku-4-5`.
+- `VOYAGE_API_KEY` — primary embedding provider.
+- `OPENAI_API_KEY` — embedding fallback.
 
-- If legacy `/public/users/search` and `/public/posts/search` exist, either:
-  - Deprecate and redirect to the new combined search with a message, or
-  - Proxy them to the new search endpoint and map responses until clients migrate.
+### api-gateway
+
+- `SEARCH_SERVICE_GRPC_ADDR` — usually `search-service:50054` in compose or
+  `localhost:50054` for local hybrid runs.
+
+### frontend
+
+- `BACKEND_API_URL` — points the BFF at api-gateway.
+
+## Local setup
+
+From the repo root:
+
+```bash
+make infra-up
+make seed
+make embed-fake
+```
+
+`make embed-fake` is sufficient for UI smoke testing because it populates the
+pgvector column deterministically. It does not prove semantic ranking quality.
+Use `make embed` with `VOYAGE_API_KEY` or `OPENAI_API_KEY` for real ranking.
+
+For a hybrid local run:
+
+```bash
+cd services/search-service
+CATALOG_DATABASE_URL="postgres://postgres:${POSTGRES_POST_PASSWORD}@localhost:${POSTGRES_POST_HOST_PORT:-15432}/postdb?sslmode=disable" \
+REDIS_URL=localhost:6379 \
+go run .
+```
+
+Then run the gateway with `SEARCH_SERVICE_GRPC_ADDR=localhost:50054`, and run
+the frontend.
+
+## Degraded mode
+
+The service is intentionally usable without paid AI keys:
+
+- Missing embedding key: search-service uses the deterministic fake embedder.
+- Missing Anthropic key: spec extraction and match explanations are skipped.
+- Missing Redis: the pipeline runs with a no-op cache.
+
+This mode is for local development and CI only. It verifies that the UI and
+transport path work, but it is not evidence of search relevance.
+
+## Smoke test checklist
+
+1. Register or log in as a buyer.
+2. Confirm authenticated users land at `/dashboard`.
+3. Submit `100G QSFP28 LR4 Cisco compatible`.
+4. Confirm navigation to `/search?q=100G...`.
+5. Confirm `/api/bff/search` sends a `POST` request.
+6. Confirm api-gateway receives `POST /api/v1/search`.
+7. Confirm the results page renders:
+   - original query prompt,
+   - parsed spec chips when Anthropic is enabled,
+   - ranked product rows,
+   - match explanations when Anthropic is enabled.
+8. Remove or add a chip and confirm the next request includes
+   `spec_overrides`.
+9. Open the Quote modal and confirm it is UI-only until GAU-249 implements RFQ
+   persistence and supplier magic-link email.
+
+## Relevance validation
+
+GAU-245 remains In Progress until it is validated with real keys and the seeded
+catalog. GAU-258 owns the full 20-query bank. Minimum live validation before
+marking search Done:
+
+- real embeddings generated for all seeded products,
+- real Claude spec extraction enabled,
+- top-5 includes an appropriate part for the representative query set,
+- p95 end-to-end latency below 4 seconds.
 
 ## Rollback
 
-- **Frontend/gateway**: Disable Discover tab and/or search route; revert to previous frontend/gateway version.
-- **Search-service**: Stop search-service; gateway search will fail (return 503 or equivalent). Optional: feature-flag the search route to turn it off without redeploy.
-- **Events**: Stopping Kafka publishing from user/post services does not require rollback of search-service; index will simply stop updating until publishing is restored.
-
-## Health and SLO
-
-- **Search-service**: Health check should reflect OpenSearch and (optionally) Kafka connectivity. If OpenSearch is down, search returns partial results (users_partial / posts_partial) and no top-level error.
-- **Freshness**: Target 1–3s from user/post change to searchable. Monitor consumer lag; alert if lag exceeds threshold (e.g. > 1000 messages or > 30s behind).
-- **Demotion**: AreFollowed is called per search request; ensure user-service latency and timeouts (e.g. 3s) are acceptable; consider batched lookup if needed.
-
-## Testing checklist before rollout
-
-- [ ] Unit: search cursor encode/decode, build body, demote order (search-service).
-- [ ] Unit: follow invariants (no self-follow, idempotent follow/unfollow) (user-service).
-- [ ] Unit: gateway search handler (auth required, missing query 400, happy path with mock client).
-- [ ] Failure: OpenSearch unavailable returns partial branches and no top-level error (search-service).
-- [ ] Integration (optional): Gateway → search-service with real services; Kafka event → OpenSearch document; demotion via user-service.
+- Frontend: redirect `/dashboard` back to the previous app surface or hide the
+  search results route.
+- Gateway: disable/protect `POST /api/v1/search` or point
+  `SEARCH_SERVICE_GRPC_ADDR` back to a known-good search-service version.
+- Search service: stop the service; gateway returns search errors while other
+  buyer app surfaces remain available.
