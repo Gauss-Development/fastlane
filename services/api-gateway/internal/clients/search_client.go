@@ -1,0 +1,74 @@
+package clients
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"api-gateway/internal/config"
+	"api-gateway/pkg/logger"
+
+	searchv1 "github.com/nikitashilov/microblog_grpc/proto/search/v1"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
+	"google.golang.org/protobuf/types/known/emptypb"
+)
+
+const defaultSearchTimeout = 15 * time.Second
+
+type SearchClient struct {
+	conn   *grpc.ClientConn
+	client searchv1.SearchServiceClient
+	logger *logger.Logger
+}
+
+func NewSearchClient(addr string, tlsCfg config.GRPCTLSConfig, logger *logger.Logger) (*SearchClient, error) {
+	creds, err := buildClientTransportCredentials(tlsCfg)
+	if err != nil {
+		return nil, fmt.Errorf("build search client transport credentials: %w", err)
+	}
+
+	conn, err := grpc.NewClient(
+		addr,
+		grpc.WithTransportCredentials(creds),
+		grpc.WithKeepaliveParams(keepalive.ClientParameters{
+			Time:                keepaliveTime,
+			Timeout:             keepaliveTimeout,
+			PermitWithoutStream: keepalivePermitWithoutStream,
+		}),
+		grpc.WithUnaryInterceptor(unaryClientLoggingInterceptor(logger)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("connect to search gRPC service: %w", err)
+	}
+	return &SearchClient{
+		conn:   conn,
+		client: searchv1.NewSearchServiceClient(conn),
+		logger: logger,
+	}, nil
+}
+
+func (c *SearchClient) Search(ctx context.Context, query, requestingUserID string, limit int32, overrides *searchv1.ParsedSpecs) (*searchv1.SearchResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, defaultSearchTimeout)
+	defer cancel()
+	return c.client.Search(ctx, &searchv1.SearchRequest{
+		Query:            query,
+		RequestingUserId: requestingUserID,
+		Limit:            limit,
+		SpecOverrides:    overrides,
+	})
+}
+
+func (c *SearchClient) HealthCheck(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	_, err := c.client.HealthCheck(ctx, &emptypb.Empty{})
+	return err
+}
+
+func (c *SearchClient) Close() error {
+	if c.conn != nil {
+		return c.conn.Close()
+	}
+	return nil
+}

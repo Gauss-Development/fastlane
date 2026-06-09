@@ -1,0 +1,259 @@
+supplier_slug: innolight
+products:
+  - sku: INO-10G-SFPP-SR
+    name: 10G SFP+ SR Transceiver
+    name_zh: 10G SFP+ SR 光模块
+    category: transceiver
+    specs:
+      data_rate: "10G"
+      form_factor: "SFP+"
+      reach_km: 0.3
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus, Arista 7050X, Juniper QFX, Mellanox]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 33.00
+    moq: 100
+    stock_qty: 4200
+    lead_time_days: 7
+    datasheet_url: https://www.innolight.com/datasheets/INO-10G-SFPP-SR.pdf
+
+  - sku: INO-10G-SFPP-LR
+    name: 10G SFP+ LR Transceiver
+    name_zh: 10G SFP+ LR 光模块
+    category: transceiver
+    specs:
+      data_rate: "10G"
+      form_factor: "SFP+"
+      reach_km: 10
+      wavelength_nm: 1310
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus, Arista 7050X, Juniper QFX, Mellanox, NVIDIA Spectrum]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 89.00
+    moq: 100
+    stock_qty: 3100
+    lead_time_days: 7
+    datasheet_url: https://www.innolight.com/datasheets/INO-10G-SFPP-LR.pdf
+
+  - sku: INO-25G-SFP28-SR
+    name: 25G SFP28 SR Transceiver
+    name_zh: 25G SFP28 SR 光模块
+    category: transceiver
+    specs:
+      data_rate: "25G"
+      form_factor: "SFP28"
+      reach_km: 0.1
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7170, Juniper QFX5200, NVIDIA Spectrum]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 49.00
+    moq: 100
+    stock_qty: 5400
+    lead_time_days: 7
+    datasheet_url: https://www.innolight.com/datasheets/INO-25G-SFP28-SR.pdf
+
+  - sku: INO-25G-SFP28-LR
+    name: 25G SFP28 LR Transceiver
+    name_zh: 25G SFP28 LR 光模块
+    category: transceiver
+    specs:
+      data_rate: "25G"
+      form_factor: "SFP28"
+      reach_km: 10
+      wavelength_nm: 1310
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7170, Juniper QFX5200, NVIDIA Spectrum]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 256.00
+    moq: 50
+    stock_qty: 1200
+    lead_time_days: 10
+    datasheet_url: https://www.innolight.com/datasheets/INO-25G-SFP28-LR.pdf
+
+  - sku: INO-40G-QSFPP-SR4
+    name: 40G QSFP+ SR4 Transceiver
+    name_zh: 40G QSFP+ SR4 光模块
+    category: transceiver
+    specs:
+      data_rate: "40G"
+      form_factor: "QSFP+"
+      reach_km: 0.15
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: MPO-12
+      ddm: true
+      compatibility: [Cisco Nexus, Arista 7050X, Juniper QFX, NVIDIA Spectrum]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 128.00
+    moq: 50
+    stock_qty: 1850
+    lead_time_days: 10
+    datasheet_url: https://www.innolight.com/datasheets/INO-40G-QSFPP-SR4.pdf
+
+  - sku: INO-40G-QSFPP-LR4
+    name: 40G QSFP+ LR4 Transceiver
+    name_zh: 40G QSFP+ LR4 光模块
+    category: transceiver
+    specs:
+      data_rate: "40G"
+      form_factor: "QSFP+"
+      reach_km: 10
+      wavelength_nm: [1271, 1291, 1311, 1331]
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus, Arista 7050X, Juniper QFX, NVIDIA Spectrum]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+      lanes: 4
+    price_usd: 498.00
+    moq: 20
+    stock_qty: 480
+    lead_time_days: 14
+    datasheet_url: https://www.innolight.com/datasheets/INO-40G-QSFPP-LR4.pdf
+
+  - sku: INO-100G-QSFP28-SR4
+    name: 100G QSFP28 SR4 Transceiver
+    name_zh: 100G QSFP28 SR4 光模块
+    category: transceiver
+    specs:
+      data_rate: "100G"
+      form_factor: "QSFP28"
+      reach_km: 0.1
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: MPO-12
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7060X, Juniper QFX5200, NVIDIA SN2700]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 168.00
+    moq: 50
+    stock_qty: 4200
+    lead_time_days: 10
+    datasheet_url: https://www.innolight.com/datasheets/INO-100G-QSFP28-SR4.pdf
+
+  - sku: INO-100G-QSFP28-LR4
+    name: 100G QSFP28 LR4 Transceiver
+    name_zh: 100G QSFP28 LR4 光模块
+    category: transceiver
+    specs:
+      data_rate: "100G"
+      form_factor: "QSFP28"
+      reach_km: 10
+      wavelength_nm: [1295, 1300, 1305, 1310]
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7060X, Juniper QFX5200, NVIDIA SN2700]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+      lanes: 4
+    price_usd: 318.00
+    moq: 50
+    stock_qty: 2800
+    lead_time_days: 10
+    datasheet_url: https://www.innolight.com/datasheets/INO-100G-QSFP28-LR4.pdf
+
+  - sku: INO-100G-QSFP28-CWDM4
+    name: 100G QSFP28 CWDM4 Transceiver 2km
+    name_zh: 100G QSFP28 CWDM4 2公里光模块
+    category: transceiver
+    specs:
+      data_rate: "100G"
+      form_factor: "QSFP28"
+      reach_km: 2
+      wavelength_nm: [1271, 1291, 1311, 1331]
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7060X, Juniper QFX5200, NVIDIA SN2700]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+      lanes: 4
+    price_usd: 412.00
+    moq: 20
+    stock_qty: 720
+    lead_time_days: 14
+    datasheet_url: https://www.innolight.com/datasheets/INO-100G-QSFP28-CWDM4.pdf
+
+  - sku: INO-100G-QSFP28-PSM4
+    name: 100G QSFP28 PSM4 Transceiver 500m
+    name_zh: 100G QSFP28 PSM4 500米光模块
+    category: transceiver
+    specs:
+      data_rate: "100G"
+      form_factor: "QSFP28"
+      reach_km: 0.5
+      wavelength_nm: 1310
+      fiber_type: single-mode
+      connector: MPO-12
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7060X, Juniper QFX5200, NVIDIA SN2700]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+      lanes: 4
+    price_usd: 245.00
+    moq: 50
+    stock_qty: 980
+    lead_time_days: 10
+    datasheet_url: https://www.innolight.com/datasheets/INO-100G-QSFP28-PSM4.pdf
+
+  - sku: INO-400G-QSFP-DD-SR8
+    name: 400G QSFP-DD SR8 Transceiver
+    name_zh: 400G QSFP-DD SR8 光模块
+    category: transceiver
+    specs:
+      data_rate: "400G"
+      form_factor: "QSFP-DD"
+      reach_km: 0.1
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: MPO-16
+      ddm: true
+      compatibility: [Cisco Nexus 9300, Arista 7050X4, Juniper QFX5220, NVIDIA SN4000]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+      lanes: 8
+    price_usd: 568.00
+    moq: 10
+    stock_qty: 280
+    lead_time_days: 18
+    datasheet_url: https://www.innolight.com/datasheets/INO-400G-QSFP-DD-SR8.pdf
+
+  - sku: INO-400G-QSFP-DD-FR4
+    name: 400G QSFP-DD FR4 Transceiver 2km
+    name_zh: 400G QSFP-DD FR4 2公里光模块
+    category: transceiver
+    specs:
+      data_rate: "400G"
+      form_factor: "QSFP-DD"
+      reach_km: 2
+      wavelength_nm: [1271, 1291, 1311, 1331]
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9300, Arista 7050X4, Juniper QFX5220, NVIDIA SN4000]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+      lanes: 4
+    price_usd: 1420.00
+    moq: 10
+    stock_qty: 140
+    lead_time_days: 21
+    datasheet_url: https://www.innolight.com/datasheets/INO-400G-QSFP-DD-FR4.pdf

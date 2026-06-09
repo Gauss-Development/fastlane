@@ -1,0 +1,19 @@
+slug: gigalight
+name: Gigalight
+name_zh: 易飞扬
+city: Shenzhen
+cluster: Shenzhen
+country: CN
+capabilities: [transceiver, AOC, DAC, BiDi, CWDM, DWDM]
+certifications: [ISO 9001, ISO 14001, RoHS, Telcordia GR-468, CE]
+founded_year: 2006
+employees: 800
+facility_size_m2: 22000
+annual_output: 5M units
+on_time_rate: 94.2
+rating: 4.7
+verified_at: 2026-03-15T00:00:00Z
+photo_url: /seeds/photos/gigalight-facility.jpg
+audit_report_url: /seeds/audits/gigalight-2025.pdf
+contact_email: sales@gigalight.com
+contact_wechat: gigalight_sales

@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+package order.v1;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/nikitashilov/microblog_grpc/proto/order/v1;orderv1";
+
+// OrderStatus values mirror the CHECK constraint on orders.status.
+// Kept as a plain string field in the proto (rather than an enum) to keep the
+// state machine entirely in Go — the proto file is otherwise touched any time
+// a new state is added. See Order Service Architecture doc for the full FSM.
+message Order {
+  string id                = 1;   // ORD-YYYYMMDD-NNNN-SFO
+  string buyer_id          = 2;   // soft ref to users(id) in user-service
+  string supplier_id       = 3;
+  string quote_id          = 4;
+  string rfq_id            = 5;
+
+  string status            = 6;
+  string payment_status    = 7;   // unpaid | paid | refunded
+  string qc_status         = 8;   // null | pending | in_progress | passed | failed
+
+  double total_usd         = 9;
+  string shipping_address  = 10;
+  string shipping_city     = 11;
+  string shipping_country  = 12;
+
+  string warranty_until    = 13;  // ISO-8601 date
+  google.protobuf.Timestamp cancelled_at = 14;
+  string cancellation_reason = 15;
+
+  google.protobuf.Timestamp created_at = 16;
+  google.protobuf.Timestamp updated_at = 17;
+}
+
+message OrderEvent {
+  string id           = 1;
+  string order_id     = 2;
+  string event_type   = 3;
+  string from_status  = 4;
+  string to_status    = 5;
+  string actor_id     = 6;
+  string actor_type   = 7;   // buyer | supplier | admin | system | inspector | carrier
+  google.protobuf.Timestamp occurred_at = 8;
+  string occurred_tz  = 9;
+  string location     = 10;
+  google.protobuf.Struct payload   = 11;
+  google.protobuf.Struct documents = 12;
+  string notes        = 13;
+  google.protobuf.Timestamp created_at = 14;
+}
+
+message CreateOrderRequest {
+  Order order = 1;
+}
+
+message GetOrderRequest {
+  string id = 1;
+  string requesting_user_id = 2;
+}
+
+message ListOrdersRequest {
+  string buyer_id    = 1;
+  string supplier_id = 2;
+  string status      = 3;
+  int32  limit       = 4;
+  int32  offset      = 5;
+}
+
+message ListOrdersResponse {
+  repeated Order orders = 1;
+  int32 total = 2;
+}
+
+// AppendEvent is the only mutator for state transitions. Idempotent on
+// (order_id, event_type, occurred_at) — see the UNIQUE constraint on
+// order_events. Callers must supply a deterministic occurred_at for retries.
+message AppendEventRequest {
+  OrderEvent event = 1;
+}
+
+message ListEventsRequest {
+  string order_id = 1;
+}
+
+message ListEventsResponse {
+  repeated OrderEvent events = 1;
+}
+
+service OrderService {
+  rpc CreateOrder(CreateOrderRequest)           returns (Order);
+  rpc GetOrder(GetOrderRequest)                 returns (Order);
+  rpc ListOrders(ListOrdersRequest)             returns (ListOrdersResponse);
+  rpc AppendEvent(AppendEventRequest)           returns (OrderEvent);
+  rpc ListEvents(ListEventsRequest)             returns (ListEventsResponse);
+  rpc HealthCheck(google.protobuf.Empty)        returns (google.protobuf.Empty);
+}

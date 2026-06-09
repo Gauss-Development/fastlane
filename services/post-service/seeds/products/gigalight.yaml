@@ -1,0 +1,255 @@
+supplier_slug: gigalight
+products:
+  - sku: GLT-1G-SFP-SX
+    name: 1G SFP SX Transceiver
+    name_zh: 1G SFP SX 光模块
+    category: transceiver
+    specs:
+      data_rate: "1G"
+      form_factor: "SFP"
+      reach_km: 0.55
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Catalyst, HPE ProCurve, Juniper EX, Arista 7050]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 24.50
+    moq: 50
+    stock_qty: 1200
+    lead_time_days: 10
+    datasheet_url: https://www.gigalight.com/datasheets/GLT-1G-SFP-SX.pdf
+
+  - sku: GLT-1G-SFP-LX
+    name: 1G SFP LX Transceiver
+    name_zh: 1G SFP LX 光模块
+    category: transceiver
+    specs:
+      data_rate: "1G"
+      form_factor: "SFP"
+      reach_km: 10
+      wavelength_nm: 1310
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Catalyst, HPE Aruba, Juniper EX, Arista 7050]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 34.00
+    moq: 50
+    stock_qty: 980
+    lead_time_days: 10
+    datasheet_url: https://www.gigalight.com/datasheets/GLT-1G-SFP-LX.pdf
+
+  - sku: GLT-1G-SFP-ZX
+    name: 1G SFP ZX Transceiver 80km
+    name_zh: 1G SFP ZX 80公里光模块
+    category: transceiver
+    specs:
+      data_rate: "1G"
+      form_factor: "SFP"
+      reach_km: 80
+      wavelength_nm: 1550
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Catalyst, Juniper MX, Arista 7280]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 82.00
+    moq: 20
+    stock_qty: 320
+    lead_time_days: 14
+    datasheet_url: https://www.gigalight.com/datasheets/GLT-1G-SFP-ZX.pdf
+
+  - sku: GLT-10G-SFPP-SR
+    name: 10G SFP+ SR Transceiver
+    name_zh: 10G SFP+ SR 光模块
+    category: transceiver
+    specs:
+      data_rate: "10G"
+      form_factor: "SFP+"
+      reach_km: 0.3
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus, Arista 7050X, Juniper QFX, Mellanox]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 31.00
+    moq: 50
+    stock_qty: 2100
+    lead_time_days: 10
+    datasheet_url: https://www.gigalight.com/datasheets/GLT-10G-SFPP-SR.pdf
+
+  - sku: GLT-10G-SFPP-LR
+    name: 10G SFP+ LR Transceiver
+    name_zh: 10G SFP+ LR 光模块
+    category: transceiver
+    specs:
+      data_rate: "10G"
+      form_factor: "SFP+"
+      reach_km: 10
+      wavelength_nm: 1310
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7050X, Juniper QFX, Mellanox]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 92.00
+    moq: 50
+    stock_qty: 1450
+    lead_time_days: 10
+    datasheet_url: https://www.gigalight.com/datasheets/GLT-10G-SFPP-LR.pdf
+
+  - sku: GLT-10G-SFPP-ER
+    name: 10G SFP+ ER Transceiver 40km
+    name_zh: 10G SFP+ ER 40公里光模块
+    category: transceiver
+    specs:
+      data_rate: "10G"
+      form_factor: "SFP+"
+      reach_km: 40
+      wavelength_nm: 1550
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus, Juniper MX, Arista 7280]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 318.00
+    moq: 20
+    stock_qty: 180
+    lead_time_days: 14
+    datasheet_url: https://www.gigalight.com/datasheets/GLT-10G-SFPP-ER.pdf
+
+  - sku: GLT-10G-SFPP-ZR
+    name: 10G SFP+ ZR Transceiver 80km
+    name_zh: 10G SFP+ ZR 80公里光模块
+    category: transceiver
+    specs:
+      data_rate: "10G"
+      form_factor: "SFP+"
+      reach_km: 80
+      wavelength_nm: 1550
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus, Juniper MX, Arista 7280]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 575.00
+    moq: 10
+    stock_qty: 120
+    lead_time_days: 18
+    datasheet_url: https://www.gigalight.com/datasheets/GLT-10G-SFPP-ZR.pdf
+
+  - sku: GLT-10G-SFPP-BIDI-LR-TX1330
+    name: 10G SFP+ BiDi LR (1330 TX / 1270 RX, 10km)
+    name_zh: 10G SFP+ BiDi LR 单纤双向光模块
+    category: transceiver
+    specs:
+      data_rate: "10G"
+      form_factor: "SFP+"
+      reach_km: 10
+      wavelength_nm: [1330, 1270]
+      fiber_type: single-mode
+      connector: LC simplex
+      ddm: true
+      compatibility: [Cisco Nexus, Arista 7050X, Juniper QFX]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+      bidi: true
+    price_usd: 148.00
+    moq: 50
+    stock_qty: 600
+    lead_time_days: 14
+    datasheet_url: https://www.gigalight.com/datasheets/GLT-10G-SFPP-BIDI-LR.pdf
+
+  - sku: GLT-25G-SFP28-SR
+    name: 25G SFP28 SR Transceiver
+    name_zh: 25G SFP28 SR 光模块
+    category: transceiver
+    specs:
+      data_rate: "25G"
+      form_factor: "SFP28"
+      reach_km: 0.1
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7170, Juniper QFX5200, Mellanox]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 54.00
+    moq: 50
+    stock_qty: 940
+    lead_time_days: 12
+    datasheet_url: https://www.gigalight.com/datasheets/GLT-25G-SFP28-SR.pdf
+
+  - sku: GLT-25G-SFP28-LR
+    name: 25G SFP28 LR Transceiver
+    name_zh: 25G SFP28 LR 光模块
+    category: transceiver
+    specs:
+      data_rate: "25G"
+      form_factor: "SFP28"
+      reach_km: 10
+      wavelength_nm: 1310
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7170, Juniper QFX5200, Mellanox]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 278.00
+    moq: 20
+    stock_qty: 410
+    lead_time_days: 14
+    datasheet_url: https://www.gigalight.com/datasheets/GLT-25G-SFP28-LR.pdf
+
+  - sku: GLT-100G-QSFP28-SR4
+    name: 100G QSFP28 SR4 Transceiver
+    name_zh: 100G QSFP28 SR4 光模块
+    category: transceiver
+    specs:
+      data_rate: "100G"
+      form_factor: "QSFP28"
+      reach_km: 0.1
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: MPO-12
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7060X, Juniper QFX5200, Mellanox SN2700]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 178.00
+    moq: 20
+    stock_qty: 520
+    lead_time_days: 14
+    datasheet_url: https://www.gigalight.com/datasheets/GLT-100G-QSFP28-SR4.pdf
+
+  - sku: GLT-100G-QSFP28-LR4
+    name: 100G QSFP28 LR4 Transceiver
+    name_zh: 100G QSFP28 LR4 光模块
+    category: transceiver
+    specs:
+      data_rate: "100G"
+      form_factor: "QSFP28"
+      reach_km: 10
+      wavelength_nm: [1295, 1300, 1305, 1310]
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7060X, Juniper QFX5200, Mellanox SN2700]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+      lanes: 4
+    price_usd: 342.00
+    moq: 20
+    stock_qty: 360
+    lead_time_days: 14
+    datasheet_url: https://www.gigalight.com/datasheets/GLT-100G-QSFP28-LR4.pdf

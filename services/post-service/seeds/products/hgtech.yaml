@@ -1,0 +1,248 @@
+supplier_slug: hgtech
+products:
+  - sku: HGT-1G-SFP-SX
+    name: 1G SFP SX Transceiver
+    name_zh: 1G SFP SX 光模块
+    category: transceiver
+    specs:
+      data_rate: "1G"
+      form_factor: "SFP"
+      reach_km: 0.55
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Catalyst, HPE ProCurve, Juniper EX]
+      operating_temp_c: [-5, 75]
+      hot_pluggable: true
+    price_usd: 23.00
+    moq: 100
+    stock_qty: 2300
+    lead_time_days: 10
+    datasheet_url: https://www.hgtech.com.cn/datasheets/HGT-1G-SFP-SX.pdf
+
+  - sku: HGT-1G-SFP-LX-IND
+    name: 1G SFP LX Industrial -40 to 85C
+    name_zh: 1G SFP LX 工业级光模块
+    category: transceiver
+    specs:
+      data_rate: "1G"
+      form_factor: "SFP"
+      reach_km: 10
+      wavelength_nm: 1310
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco IE, Hirschmann, Moxa, Siemens Scalance]
+      operating_temp_c: [-40, 85]
+      hot_pluggable: true
+      industrial_grade: true
+    price_usd: 76.00
+    moq: 50
+    stock_qty: 740
+    lead_time_days: 14
+    datasheet_url: https://www.hgtech.com.cn/datasheets/HGT-1G-SFP-LX-IND.pdf
+
+  - sku: HGT-10G-SFPP-SR
+    name: 10G SFP+ SR Transceiver
+    name_zh: 10G SFP+ SR 光模块
+    category: transceiver
+    specs:
+      data_rate: "10G"
+      form_factor: "SFP+"
+      reach_km: 0.3
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus, Arista 7050X, Juniper QFX]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 35.00
+    moq: 100
+    stock_qty: 1980
+    lead_time_days: 10
+    datasheet_url: https://www.hgtech.com.cn/datasheets/HGT-10G-SFPP-SR.pdf
+
+  - sku: HGT-10G-SFPP-LR
+    name: 10G SFP+ LR Transceiver
+    name_zh: 10G SFP+ LR 光模块
+    category: transceiver
+    specs:
+      data_rate: "10G"
+      form_factor: "SFP+"
+      reach_km: 10
+      wavelength_nm: 1310
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus, Arista 7050X, Juniper QFX]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 98.00
+    moq: 100
+    stock_qty: 1640
+    lead_time_days: 10
+    datasheet_url: https://www.hgtech.com.cn/datasheets/HGT-10G-SFPP-LR.pdf
+
+  - sku: HGT-10G-SFPP-ZR
+    name: 10G SFP+ ZR Transceiver 80km
+    name_zh: 10G SFP+ ZR 80公里光模块
+    category: transceiver
+    specs:
+      data_rate: "10G"
+      form_factor: "SFP+"
+      reach_km: 80
+      wavelength_nm: 1550
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus, Juniper MX, Arista 7280]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 612.00
+    moq: 10
+    stock_qty: 95
+    lead_time_days: 18
+    datasheet_url: https://www.hgtech.com.cn/datasheets/HGT-10G-SFPP-ZR.pdf
+
+  - sku: HGT-25G-SFP28-SR
+    name: 25G SFP28 SR Transceiver
+    name_zh: 25G SFP28 SR 光模块
+    category: transceiver
+    specs:
+      data_rate: "25G"
+      form_factor: "SFP28"
+      reach_km: 0.1
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7170, Juniper QFX5200]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 56.00
+    moq: 50
+    stock_qty: 1180
+    lead_time_days: 10
+    datasheet_url: https://www.hgtech.com.cn/datasheets/HGT-25G-SFP28-SR.pdf
+
+  - sku: HGT-40G-QSFPP-SR4
+    name: 40G QSFP+ SR4 Transceiver
+    name_zh: 40G QSFP+ SR4 光模块
+    category: transceiver
+    specs:
+      data_rate: "40G"
+      form_factor: "QSFP+"
+      reach_km: 0.15
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: MPO-12
+      ddm: true
+      compatibility: [Cisco Nexus, Arista 7050X, Juniper QFX]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 145.00
+    moq: 50
+    stock_qty: 880
+    lead_time_days: 10
+    datasheet_url: https://www.hgtech.com.cn/datasheets/HGT-40G-QSFPP-SR4.pdf
+
+  - sku: HGT-40G-QSFPP-LR4
+    name: 40G QSFP+ LR4 Transceiver
+    name_zh: 40G QSFP+ LR4 光模块
+    category: transceiver
+    specs:
+      data_rate: "40G"
+      form_factor: "QSFP+"
+      reach_km: 10
+      wavelength_nm: [1271, 1291, 1311, 1331]
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus, Arista 7050X, Juniper QFX]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+      lanes: 4
+    price_usd: 532.00
+    moq: 20
+    stock_qty: 280
+    lead_time_days: 14
+    datasheet_url: https://www.hgtech.com.cn/datasheets/HGT-40G-QSFPP-LR4.pdf
+
+  - sku: HGT-100G-QSFP28-SR4
+    name: 100G QSFP28 SR4 Transceiver
+    name_zh: 100G QSFP28 SR4 光模块
+    category: transceiver
+    specs:
+      data_rate: "100G"
+      form_factor: "QSFP28"
+      reach_km: 0.1
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: MPO-12
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7060X, Juniper QFX5200]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 195.00
+    moq: 50
+    stock_qty: 720
+    lead_time_days: 10
+    datasheet_url: https://www.hgtech.com.cn/datasheets/HGT-100G-QSFP28-SR4.pdf
+
+  - sku: HGT-100G-QSFP28-LR4
+    name: 100G QSFP28 LR4 Transceiver
+    name_zh: 100G QSFP28 LR4 光模块
+    category: transceiver
+    specs:
+      data_rate: "100G"
+      form_factor: "QSFP28"
+      reach_km: 10
+      wavelength_nm: [1295, 1300, 1305, 1310]
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7060X, Juniper QFX5200]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+      lanes: 4
+    price_usd: 365.00
+    moq: 50
+    stock_qty: 940
+    lead_time_days: 14
+    datasheet_url: https://www.hgtech.com.cn/datasheets/HGT-100G-QSFP28-LR4.pdf
+
+  - sku: HGT-LASER-DFB-1310
+    name: 1310nm DFB Laser Diode (TO-Can, 10mW)
+    name_zh: 1310nm DFB 激光器
+    category: laser
+    specs:
+      wavelength_nm: 1310
+      output_power_mw: 10
+      package: TO-can
+      operating_temp_c: [-40, 85]
+      side_mode_suppression_db: 35
+      use_case: [transceiver_OEM, telecom, instrumentation]
+    price_usd: 89.00
+    moq: 100
+    stock_qty: 1800
+    lead_time_days: 14
+    datasheet_url: https://www.hgtech.com.cn/datasheets/HGT-LASER-DFB-1310.pdf
+
+  - sku: HGT-LASER-DFB-1550
+    name: 1550nm DFB Laser Diode (TO-Can, 10mW)
+    name_zh: 1550nm DFB 激光器
+    category: laser
+    specs:
+      wavelength_nm: 1550
+      output_power_mw: 10
+      package: TO-can
+      operating_temp_c: [-40, 85]
+      side_mode_suppression_db: 35
+      use_case: [transceiver_OEM, telecom, sensing]
+    price_usd: 95.00
+    moq: 100
+    stock_qty: 1500
+    lead_time_days: 14
+    datasheet_url: https://www.hgtech.com.cn/datasheets/HGT-LASER-DFB-1550.pdf

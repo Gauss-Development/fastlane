@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package rfq.v1;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/nikitashilov/microblog_grpc/proto/rfq/v1;rfqv1";
+
+message RFQ {
+  string id                       = 1;   // RFQ-YYYYMMDD-NNNN-SZX
+  string buyer_id                 = 2;   // soft ref to users(id) in user-service
+  string query_text               = 3;
+  google.protobuf.Struct parsed_specs = 4;
+  repeated string matched_product_ids = 5;
+  string status                   = 6;   // open | quoted | accepted | closed
+  int32  qty                      = 7;
+  string target_date              = 8;   // ISO-8601 date
+  string shipping_address         = 9;
+  string notes                    = 10;
+  google.protobuf.Timestamp created_at = 11;
+}
+
+message Quote {
+  string id              = 1;   // QUOTE-YYYYMMDD-NNNN-SZX
+  string rfq_id          = 2;
+  string supplier_id     = 3;
+  string product_id      = 4;   // optional
+  double price_usd       = 5;
+  int32  lead_time_days  = 6;
+  string validity_date   = 7;   // ISO-8601 date
+  string supplier_notes  = 8;
+  int32  match_score     = 9;   // 0..100, AI-generated
+  string status          = 10;  // pending | submitted | accepted | rejected
+  google.protobuf.Timestamp submitted_at = 11;
+  google.protobuf.Timestamp created_at   = 12;
+}
+
+message CreateRFQRequest {
+  RFQ rfq = 1;
+}
+
+message GetRFQRequest {
+  string id = 1;
+  string requesting_user_id = 2;   // gateway-passed; service enforces authz
+}
+
+message ListRFQsRequest {
+  string buyer_id = 1;
+  int32  limit    = 2;
+  int32  offset   = 3;
+  string status   = 4;
+}
+
+message ListRFQsResponse {
+  repeated RFQ rfqs = 1;
+  int32 total = 2;
+}
+
+message AddQuoteRequest {
+  Quote quote = 1;
+}
+
+message ListQuotesForRFQRequest {
+  string rfq_id = 1;
+}
+
+message ListQuotesResponse {
+  repeated Quote quotes = 1;
+}
+
+service RFQService {
+  rpc CreateRFQ(CreateRFQRequest)                  returns (RFQ);
+  rpc GetRFQ(GetRFQRequest)                        returns (RFQ);
+  rpc ListRFQs(ListRFQsRequest)                    returns (ListRFQsResponse);
+  rpc AddQuote(AddQuoteRequest)                    returns (Quote);
+  rpc ListQuotesForRFQ(ListQuotesForRFQRequest)    returns (ListQuotesResponse);
+  rpc HealthCheck(google.protobuf.Empty)           returns (google.protobuf.Empty);
+}

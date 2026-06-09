@@ -1,0 +1,258 @@
+supplier_slug: hisense-broadband
+products:
+  - sku: HIS-1G-SFP-LX
+    name: 1G SFP LX Transceiver
+    name_zh: 1G SFP LX 光模块
+    category: transceiver
+    specs:
+      data_rate: "1G"
+      form_factor: "SFP"
+      reach_km: 10
+      wavelength_nm: 1310
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Catalyst, HPE Aruba, Juniper EX]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 31.50
+    moq: 100
+    stock_qty: 2900
+    lead_time_days: 7
+    datasheet_url: https://www.hisense-broadband.com/datasheets/HIS-1G-SFP-LX.pdf
+
+  - sku: HIS-1G-SFP-BIDI-U
+    name: 1G SFP BiDi Upstream (TX1310/RX1490, 20km)
+    name_zh: 1G SFP BiDi 单纤上行光模块
+    category: transceiver
+    specs:
+      data_rate: "1G"
+      form_factor: "SFP"
+      reach_km: 20
+      wavelength_nm: [1310, 1490]
+      fiber_type: single-mode
+      connector: LC simplex
+      ddm: true
+      compatibility: [Cisco Catalyst, HPE Aruba, Juniper EX, ZTE OLT]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+      bidi: true
+    price_usd: 38.00
+    moq: 100
+    stock_qty: 4100
+    lead_time_days: 7
+    datasheet_url: https://www.hisense-broadband.com/datasheets/HIS-1G-SFP-BIDI-U.pdf
+
+  - sku: HIS-1G-SFP-BIDI-D
+    name: 1G SFP BiDi Downstream (TX1490/RX1310, 20km)
+    name_zh: 1G SFP BiDi 单纤下行光模块
+    category: transceiver
+    specs:
+      data_rate: "1G"
+      form_factor: "SFP"
+      reach_km: 20
+      wavelength_nm: [1490, 1310]
+      fiber_type: single-mode
+      connector: LC simplex
+      ddm: true
+      compatibility: [Cisco Catalyst, HPE Aruba, Juniper EX, ZTE OLT]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+      bidi: true
+    price_usd: 38.00
+    moq: 100
+    stock_qty: 4100
+    lead_time_days: 7
+    datasheet_url: https://www.hisense-broadband.com/datasheets/HIS-1G-SFP-BIDI-D.pdf
+
+  - sku: HIS-GPON-ONU-OLT
+    name: GPON OLT SFP+ (2.5G TX / 1.25G RX, 20km)
+    name_zh: GPON OLT SFP+ 光模块
+    category: transceiver
+    specs:
+      data_rate: "2.5G/1.25G"
+      form_factor: "SFP+"
+      reach_km: 20
+      wavelength_nm: [1490, 1310]
+      fiber_type: single-mode
+      connector: SC simplex
+      ddm: true
+      compatibility: [Huawei MA5800, ZTE C300/C320, Calix E7, Nokia 7360]
+      operating_temp_c: [-40, 85]
+      hot_pluggable: true
+      pon: GPON
+    price_usd: 165.00
+    moq: 20
+    stock_qty: 740
+    lead_time_days: 14
+    datasheet_url: https://www.hisense-broadband.com/datasheets/HIS-GPON-ONU-OLT.pdf
+
+  - sku: HIS-XGS-PON-OLT
+    name: XGS-PON OLT SFP+ (10G symmetric, 20km)
+    name_zh: XGS-PON OLT SFP+ 光模块
+    category: transceiver
+    specs:
+      data_rate: "10G"
+      form_factor: "SFP+"
+      reach_km: 20
+      wavelength_nm: [1577, 1270]
+      fiber_type: single-mode
+      connector: SC simplex
+      ddm: true
+      compatibility: [Huawei MA5800, ZTE C300/C320, Calix E9, Nokia 7360]
+      operating_temp_c: [-40, 85]
+      hot_pluggable: true
+      pon: XGS-PON
+    price_usd: 312.00
+    moq: 20
+    stock_qty: 360
+    lead_time_days: 14
+    datasheet_url: https://www.hisense-broadband.com/datasheets/HIS-XGS-PON-OLT.pdf
+
+  - sku: HIS-10G-SFPP-SR
+    name: 10G SFP+ SR Transceiver
+    name_zh: 10G SFP+ SR 光模块
+    category: transceiver
+    specs:
+      data_rate: "10G"
+      form_factor: "SFP+"
+      reach_km: 0.3
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus, Arista 7050X, Juniper QFX]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 30.00
+    moq: 100
+    stock_qty: 5200
+    lead_time_days: 7
+    datasheet_url: https://www.hisense-broadband.com/datasheets/HIS-10G-SFPP-SR.pdf
+
+  - sku: HIS-10G-SFPP-LR
+    name: 10G SFP+ LR Transceiver
+    name_zh: 10G SFP+ LR 光模块
+    category: transceiver
+    specs:
+      data_rate: "10G"
+      form_factor: "SFP+"
+      reach_km: 10
+      wavelength_nm: 1310
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus, Arista 7050X, Juniper QFX]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 86.00
+    moq: 100
+    stock_qty: 3100
+    lead_time_days: 7
+    datasheet_url: https://www.hisense-broadband.com/datasheets/HIS-10G-SFPP-LR.pdf
+
+  - sku: HIS-25G-SFP28-SR
+    name: 25G SFP28 SR Transceiver
+    name_zh: 25G SFP28 SR 光模块
+    category: transceiver
+    specs:
+      data_rate: "25G"
+      form_factor: "SFP28"
+      reach_km: 0.1
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7170, Juniper QFX5200]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 48.00
+    moq: 100
+    stock_qty: 2400
+    lead_time_days: 7
+    datasheet_url: https://www.hisense-broadband.com/datasheets/HIS-25G-SFP28-SR.pdf
+
+  - sku: HIS-25G-SFP28-LR
+    name: 25G SFP28 LR Transceiver
+    name_zh: 25G SFP28 LR 光模块
+    category: transceiver
+    specs:
+      data_rate: "25G"
+      form_factor: "SFP28"
+      reach_km: 10
+      wavelength_nm: 1310
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7170, Juniper QFX5200]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 252.00
+    moq: 50
+    stock_qty: 720
+    lead_time_days: 10
+    datasheet_url: https://www.hisense-broadband.com/datasheets/HIS-25G-SFP28-LR.pdf
+
+  - sku: HIS-100G-QSFP28-SR4
+    name: 100G QSFP28 SR4 Transceiver
+    name_zh: 100G QSFP28 SR4 光模块
+    category: transceiver
+    specs:
+      data_rate: "100G"
+      form_factor: "QSFP28"
+      reach_km: 0.1
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: MPO-12
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7060X, Juniper QFX5200]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 172.00
+    moq: 50
+    stock_qty: 2100
+    lead_time_days: 10
+    datasheet_url: https://www.hisense-broadband.com/datasheets/HIS-100G-QSFP28-SR4.pdf
+
+  - sku: HIS-100G-QSFP28-LR4
+    name: 100G QSFP28 LR4 Transceiver
+    name_zh: 100G QSFP28 LR4 光模块
+    category: transceiver
+    specs:
+      data_rate: "100G"
+      form_factor: "QSFP28"
+      reach_km: 10
+      wavelength_nm: [1295, 1300, 1305, 1310]
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7060X, Juniper QFX5200]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+      lanes: 4
+    price_usd: 325.00
+    moq: 50
+    stock_qty: 1480
+    lead_time_days: 10
+    datasheet_url: https://www.hisense-broadband.com/datasheets/HIS-100G-QSFP28-LR4.pdf
+
+  - sku: HIS-100G-QSFP28-DR
+    name: 100G QSFP28 DR Transceiver 500m
+    name_zh: 100G QSFP28 DR 500米光模块
+    category: transceiver
+    specs:
+      data_rate: "100G"
+      form_factor: "QSFP28"
+      reach_km: 0.5
+      wavelength_nm: 1310
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7060X, Juniper QFX5200]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 218.00
+    moq: 50
+    stock_qty: 820
+    lead_time_days: 14
+    datasheet_url: https://www.hisense-broadband.com/datasheets/HIS-100G-QSFP28-DR.pdf

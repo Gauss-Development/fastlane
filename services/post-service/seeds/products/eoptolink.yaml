@@ -1,0 +1,259 @@
+supplier_slug: eoptolink
+products:
+  - sku: EPL-1G-SFP-SX
+    name: 1G SFP SX Transceiver
+    name_zh: 1G SFP SX 光模块
+    category: transceiver
+    specs:
+      data_rate: "1G"
+      form_factor: "SFP"
+      reach_km: 0.55
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Catalyst, HPE ProCurve, Juniper EX]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 22.00
+    moq: 50
+    stock_qty: 1800
+    lead_time_days: 10
+    datasheet_url: https://www.eoptolink.com/datasheets/EPL-1G-SFP-SX.pdf
+
+  - sku: EPL-10G-SFPP-SR
+    name: 10G SFP+ SR Transceiver
+    name_zh: 10G SFP+ SR 光模块
+    category: transceiver
+    specs:
+      data_rate: "10G"
+      form_factor: "SFP+"
+      reach_km: 0.3
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus, Arista 7050X, Juniper QFX]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 28.00
+    moq: 100
+    stock_qty: 3400
+    lead_time_days: 7
+    datasheet_url: https://www.eoptolink.com/datasheets/EPL-10G-SFPP-SR.pdf
+
+  - sku: EPL-10G-SFPP-LR
+    name: 10G SFP+ LR Transceiver
+    name_zh: 10G SFP+ LR 光模块
+    category: transceiver
+    specs:
+      data_rate: "10G"
+      form_factor: "SFP+"
+      reach_km: 10
+      wavelength_nm: 1310
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus, Arista 7050X, Juniper QFX]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 85.00
+    moq: 100
+    stock_qty: 2700
+    lead_time_days: 7
+    datasheet_url: https://www.eoptolink.com/datasheets/EPL-10G-SFPP-LR.pdf
+
+  - sku: EPL-10G-SFPP-ER
+    name: 10G SFP+ ER Transceiver 40km
+    name_zh: 10G SFP+ ER 40公里光模块
+    category: transceiver
+    specs:
+      data_rate: "10G"
+      form_factor: "SFP+"
+      reach_km: 40
+      wavelength_nm: 1550
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus, Juniper MX, Arista 7280]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 295.00
+    moq: 20
+    stock_qty: 220
+    lead_time_days: 14
+    datasheet_url: https://www.eoptolink.com/datasheets/EPL-10G-SFPP-ER.pdf
+
+  - sku: EPL-10G-SFPP-DWDM-C21
+    name: 10G SFP+ DWDM Tunable 80km (C-Band Ch.21)
+    name_zh: 10G SFP+ DWDM 可调谐光模块
+    category: transceiver
+    specs:
+      data_rate: "10G"
+      form_factor: "SFP+"
+      reach_km: 80
+      wavelength_nm: 1560.61
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus, Juniper MX, Arista 7280, Ciena]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+      dwdm_channel: 21
+      tunable: false
+    price_usd: 685.00
+    moq: 10
+    stock_qty: 95
+    lead_time_days: 21
+    datasheet_url: https://www.eoptolink.com/datasheets/EPL-10G-SFPP-DWDM.pdf
+
+  - sku: EPL-25G-SFP28-SR
+    name: 25G SFP28 SR Transceiver
+    name_zh: 25G SFP28 SR 光模块
+    category: transceiver
+    specs:
+      data_rate: "25G"
+      form_factor: "SFP28"
+      reach_km: 0.1
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7170, Juniper QFX5200]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 46.00
+    moq: 100
+    stock_qty: 3300
+    lead_time_days: 7
+    datasheet_url: https://www.eoptolink.com/datasheets/EPL-25G-SFP28-SR.pdf
+
+  - sku: EPL-25G-SFP28-LR
+    name: 25G SFP28 LR Transceiver
+    name_zh: 25G SFP28 LR 光模块
+    category: transceiver
+    specs:
+      data_rate: "25G"
+      form_factor: "SFP28"
+      reach_km: 10
+      wavelength_nm: 1310
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7170, Juniper QFX5200]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 245.00
+    moq: 50
+    stock_qty: 980
+    lead_time_days: 10
+    datasheet_url: https://www.eoptolink.com/datasheets/EPL-25G-SFP28-LR.pdf
+
+  - sku: EPL-40G-QSFPP-SR4
+    name: 40G QSFP+ SR4 Transceiver
+    name_zh: 40G QSFP+ SR4 光模块
+    category: transceiver
+    specs:
+      data_rate: "40G"
+      form_factor: "QSFP+"
+      reach_km: 0.15
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: MPO-12
+      ddm: true
+      compatibility: [Cisco Nexus, Arista 7050X, Juniper QFX]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 122.00
+    moq: 50
+    stock_qty: 1450
+    lead_time_days: 10
+    datasheet_url: https://www.eoptolink.com/datasheets/EPL-40G-QSFPP-SR4.pdf
+
+  - sku: EPL-40G-QSFPP-LR4
+    name: 40G QSFP+ LR4 Transceiver
+    name_zh: 40G QSFP+ LR4 光模块
+    category: transceiver
+    specs:
+      data_rate: "40G"
+      form_factor: "QSFP+"
+      reach_km: 10
+      wavelength_nm: [1271, 1291, 1311, 1331]
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus, Arista 7050X, Juniper QFX]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+      lanes: 4
+    price_usd: 478.00
+    moq: 20
+    stock_qty: 410
+    lead_time_days: 14
+    datasheet_url: https://www.eoptolink.com/datasheets/EPL-40G-QSFPP-LR4.pdf
+
+  - sku: EPL-100G-QSFP28-LR4
+    name: 100G QSFP28 LR4 Transceiver
+    name_zh: 100G QSFP28 LR4 光模块
+    category: transceiver
+    specs:
+      data_rate: "100G"
+      form_factor: "QSFP28"
+      reach_km: 10
+      wavelength_nm: [1295, 1300, 1305, 1310]
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7060X, Juniper QFX5200]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+      lanes: 4
+    price_usd: 310.00
+    moq: 50
+    stock_qty: 1620
+    lead_time_days: 10
+    datasheet_url: https://www.eoptolink.com/datasheets/EPL-100G-QSFP28-LR4.pdf
+
+  - sku: EPL-100G-QSFP28-ER4
+    name: 100G QSFP28 ER4 Transceiver 40km
+    name_zh: 100G QSFP28 ER4 40公里光模块
+    category: transceiver
+    specs:
+      data_rate: "100G"
+      form_factor: "QSFP28"
+      reach_km: 40
+      wavelength_nm: [1295, 1300, 1305, 1310]
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7280, Juniper MX]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+      lanes: 4
+    price_usd: 880.00
+    moq: 10
+    stock_qty: 180
+    lead_time_days: 21
+    datasheet_url: https://www.eoptolink.com/datasheets/EPL-100G-QSFP28-ER4.pdf
+
+  - sku: EPL-100G-QSFP28-ZR4
+    name: 100G QSFP28 ZR4 Transceiver 80km
+    name_zh: 100G QSFP28 ZR4 80公里光模块
+    category: transceiver
+    specs:
+      data_rate: "100G"
+      form_factor: "QSFP28"
+      reach_km: 80
+      wavelength_nm: [1295, 1300, 1305, 1310]
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7280, Juniper MX, Ciena]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+      lanes: 4
+    price_usd: 2120.00
+    moq: 5
+    stock_qty: 60
+    lead_time_days: 28
+    datasheet_url: https://www.eoptolink.com/datasheets/EPL-100G-QSFP28-ZR4.pdf

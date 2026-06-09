@@ -1,0 +1,19 @@
+slug: source-photonics
+name: Source Photonics (China)
+name_zh: 索尔思光电
+city: Shanghai
+cluster: Shanghai
+country: CN
+capabilities: [transceiver, PON, BiDi, CWDM, DWDM, coherent]
+certifications: [ISO 9001, ISO 14001, ISO 45001, Telcordia GR-468, RoHS]
+founded_year: 2006
+employees: 1500
+facility_size_m2: 40000
+annual_output: 8M units
+on_time_rate: 94.0
+rating: 4.6
+verified_at: 2026-02-22T00:00:00Z
+photo_url: /seeds/photos/source-photonics-facility.jpg
+audit_report_url: /seeds/audits/source-photonics-2025.pdf
+contact_email: sales-cn@sourcephotonics.com
+contact_wechat: sourcephotonics

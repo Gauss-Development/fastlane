@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package search.v1;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "github.com/nikitashilov/microblog_grpc/proto/search/v1;searchv1";
+
+// ParsedSpecs is the structured form of a buyer's natural-language query,
+// produced by Claude tool-use spec extraction. Fields are the fiber-optic
+// transceiver vertical's known dimensions; anything the query doesn't mention
+// stays zero/empty. The results screen renders these as editable chips
+// (GAU-247) and can send them back as SearchRequest.spec_overrides to re-rank
+// without paying for another extraction.
+message ParsedSpecs {
+  string data_rate = 1;               // "100G", "10G", "1G"
+  string form_factor = 2;             // "QSFP28", "QSFP", "SFP+", "SFP"
+  double reach_km = 3;                // 10, 0.3, 80
+  int32 wavelength_nm = 4;            // 1310, 850, 1550
+  repeated string compatibility = 5;  // ["Cisco Nexus", "Arista"]
+  string fiber_type = 6;              // "single-mode", "multi-mode"
+  int32 qty_estimated = 7;
+  string free_text = 8;               // residual intent ("data center interconnect")
+}
+
+message SearchRequest {
+  string query = 1;
+  string requesting_user_id = 2;
+  int32 limit = 3;                    // max results; service clamps (default 20)
+  // When set, the service skips Claude spec extraction and ranks against these
+  // directly. Used by the editable-chip UI to re-run search after an edit.
+  ParsedSpecs spec_overrides = 4;
+}
+
+// ProductHit mirrors a products row plus the denormalized supplier display
+// fields the results screen needs (so it renders without a second round-trip)
+// and the ranking signals from the hybrid pipeline.
+message ProductHit {
+  string id = 1;
+  string supplier_id = 2;
+  string sku = 3;
+  string name = 4;
+  string name_zh = 5;
+  string category = 6;
+  google.protobuf.Struct specs = 7;
+  double price_usd = 8;
+  int32 moq = 9;
+  int32 stock_qty = 10;
+  int32 lead_time_days = 11;
+  string datasheet_url = 12;
+
+  string supplier_name = 13;
+  string supplier_city = 14;
+  bool supplier_verified = 15;
+
+  double match_score = 16;            // 0..100, vector closeness blended with spec fit
+  double vector_distance = 17;        // raw pgvector cosine distance (lower = closer)
+  string match_explanation = 18;      // one-line "why this matches", from Claude
+}
+
+message SearchResponse {
+  ParsedSpecs parsed_specs = 1;
+  repeated ProductHit results = 2;
+  string query_id = 3;                // telemetry / cache correlation id
+}
+
+service SearchService {
+  rpc Search(SearchRequest) returns (SearchResponse);
+  rpc HealthCheck(google.protobuf.Empty) returns (google.protobuf.Empty);
+}

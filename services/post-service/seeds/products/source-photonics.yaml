@@ -1,0 +1,259 @@
+supplier_slug: source-photonics
+products:
+  - sku: SRC-1G-SFP-LX
+    name: 1G SFP LX Transceiver
+    name_zh: 1G SFP LX 光模块
+    category: transceiver
+    specs:
+      data_rate: "1G"
+      form_factor: "SFP"
+      reach_km: 10
+      wavelength_nm: 1310
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Catalyst, HPE Aruba, Juniper EX]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 34.00
+    moq: 100
+    stock_qty: 2400
+    lead_time_days: 10
+    datasheet_url: https://www.sourcephotonics.com/datasheets/SRC-1G-SFP-LX.pdf
+
+  - sku: SRC-1G-SFP-BIDI-20
+    name: 1G SFP BiDi 20km (Pair, TX1310 + TX1490)
+    name_zh: 1G SFP BiDi 单纤双向光模块
+    category: transceiver
+    specs:
+      data_rate: "1G"
+      form_factor: "SFP"
+      reach_km: 20
+      wavelength_nm: [1310, 1490]
+      fiber_type: single-mode
+      connector: LC simplex
+      ddm: true
+      compatibility: [Cisco Catalyst, HPE Aruba, Juniper EX]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+      bidi: true
+    price_usd: 42.00
+    moq: 100
+    stock_qty: 1900
+    lead_time_days: 10
+    datasheet_url: https://www.sourcephotonics.com/datasheets/SRC-1G-SFP-BIDI-20.pdf
+
+  - sku: SRC-GPON-OLT
+    name: GPON OLT SFP+ Transceiver (Class B+)
+    name_zh: GPON OLT B+ 光模块
+    category: transceiver
+    specs:
+      data_rate: "2.5G/1.25G"
+      form_factor: "SFP+"
+      reach_km: 20
+      wavelength_nm: [1490, 1310]
+      fiber_type: single-mode
+      connector: SC simplex
+      ddm: true
+      compatibility: [Huawei MA5800, ZTE C300, Calix E7, Nokia 7360]
+      operating_temp_c: [-40, 85]
+      hot_pluggable: true
+      pon: GPON
+      pon_class: B+
+    price_usd: 158.00
+    moq: 20
+    stock_qty: 540
+    lead_time_days: 14
+    datasheet_url: https://www.sourcephotonics.com/datasheets/SRC-GPON-OLT.pdf
+
+  - sku: SRC-10G-SFPP-SR
+    name: 10G SFP+ SR Transceiver
+    name_zh: 10G SFP+ SR 光模块
+    category: transceiver
+    specs:
+      data_rate: "10G"
+      form_factor: "SFP+"
+      reach_km: 0.3
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus, Arista 7050X, Juniper QFX]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 32.00
+    moq: 100
+    stock_qty: 3000
+    lead_time_days: 7
+    datasheet_url: https://www.sourcephotonics.com/datasheets/SRC-10G-SFPP-SR.pdf
+
+  - sku: SRC-10G-SFPP-LR
+    name: 10G SFP+ LR Transceiver
+    name_zh: 10G SFP+ LR 光模块
+    category: transceiver
+    specs:
+      data_rate: "10G"
+      form_factor: "SFP+"
+      reach_km: 10
+      wavelength_nm: 1310
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus, Arista 7050X, Juniper QFX]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 92.00
+    moq: 100
+    stock_qty: 2200
+    lead_time_days: 7
+    datasheet_url: https://www.sourcephotonics.com/datasheets/SRC-10G-SFPP-LR.pdf
+
+  - sku: SRC-10G-SFPP-CWDM-1550
+    name: 10G SFP+ CWDM 80km (1550nm)
+    name_zh: 10G SFP+ CWDM 80公里光模块
+    category: transceiver
+    specs:
+      data_rate: "10G"
+      form_factor: "SFP+"
+      reach_km: 80
+      wavelength_nm: 1550
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus, Juniper MX, Arista 7280, Ciena]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+      cwdm_channel: 1550
+    price_usd: 445.00
+    moq: 10
+    stock_qty: 140
+    lead_time_days: 18
+    datasheet_url: https://www.sourcephotonics.com/datasheets/SRC-10G-SFPP-CWDM-1550.pdf
+
+  - sku: SRC-25G-SFP28-SR
+    name: 25G SFP28 SR Transceiver
+    name_zh: 25G SFP28 SR 光模块
+    category: transceiver
+    specs:
+      data_rate: "25G"
+      form_factor: "SFP28"
+      reach_km: 0.1
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7170, Juniper QFX5200]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 51.00
+    moq: 100
+    stock_qty: 1640
+    lead_time_days: 7
+    datasheet_url: https://www.sourcephotonics.com/datasheets/SRC-25G-SFP28-SR.pdf
+
+  - sku: SRC-25G-SFP28-LR
+    name: 25G SFP28 LR Transceiver
+    name_zh: 25G SFP28 LR 光模块
+    category: transceiver
+    specs:
+      data_rate: "25G"
+      form_factor: "SFP28"
+      reach_km: 10
+      wavelength_nm: 1310
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7170, Juniper QFX5200]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 265.00
+    moq: 50
+    stock_qty: 580
+    lead_time_days: 10
+    datasheet_url: https://www.sourcephotonics.com/datasheets/SRC-25G-SFP28-LR.pdf
+
+  - sku: SRC-100G-QSFP28-SR4
+    name: 100G QSFP28 SR4 Transceiver
+    name_zh: 100G QSFP28 SR4 光模块
+    category: transceiver
+    specs:
+      data_rate: "100G"
+      form_factor: "QSFP28"
+      reach_km: 0.1
+      wavelength_nm: 850
+      fiber_type: multi-mode
+      connector: MPO-12
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7060X, Juniper QFX5200]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 185.00
+    moq: 50
+    stock_qty: 1280
+    lead_time_days: 10
+    datasheet_url: https://www.sourcephotonics.com/datasheets/SRC-100G-QSFP28-SR4.pdf
+
+  - sku: SRC-100G-QSFP28-LR4
+    name: 100G QSFP28 LR4 Transceiver
+    name_zh: 100G QSFP28 LR4 光模块
+    category: transceiver
+    specs:
+      data_rate: "100G"
+      form_factor: "QSFP28"
+      reach_km: 10
+      wavelength_nm: [1295, 1300, 1305, 1310]
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7060X, Juniper QFX5200]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+      lanes: 4
+    price_usd: 348.00
+    moq: 50
+    stock_qty: 920
+    lead_time_days: 10
+    datasheet_url: https://www.sourcephotonics.com/datasheets/SRC-100G-QSFP28-LR4.pdf
+
+  - sku: SRC-100G-QSFP28-CWDM4
+    name: 100G QSFP28 CWDM4 Transceiver 2km
+    name_zh: 100G QSFP28 CWDM4 2公里光模块
+    category: transceiver
+    specs:
+      data_rate: "100G"
+      form_factor: "QSFP28"
+      reach_km: 2
+      wavelength_nm: [1271, 1291, 1311, 1331]
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7060X, Juniper QFX5200]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+      lanes: 4
+    price_usd: 432.00
+    moq: 20
+    stock_qty: 380
+    lead_time_days: 14
+    datasheet_url: https://www.sourcephotonics.com/datasheets/SRC-100G-QSFP28-CWDM4.pdf
+
+  - sku: SRC-100G-QSFP28-FR
+    name: 100G QSFP28 FR Transceiver 2km
+    name_zh: 100G QSFP28 FR 2公里光模块
+    category: transceiver
+    specs:
+      data_rate: "100G"
+      form_factor: "QSFP28"
+      reach_km: 2
+      wavelength_nm: 1310
+      fiber_type: single-mode
+      connector: LC duplex
+      ddm: true
+      compatibility: [Cisco Nexus 9000, Arista 7060X, Juniper QFX5200]
+      operating_temp_c: [0, 70]
+      hot_pluggable: true
+    price_usd: 285.00
+    moq: 50
+    stock_qty: 560
+    lead_time_days: 14
+    datasheet_url: https://www.sourcephotonics.com/datasheets/SRC-100G-QSFP28-FR.pdf

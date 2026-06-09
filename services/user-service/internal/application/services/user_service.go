@@ -1,0 +1,397 @@
+package services
+
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	"user-service/internal/application/dto"
+	"user-service/internal/application/errors"
+	"user-service/internal/domain/entities"
+	"user-service/internal/domain/repositories"
+	"user-service/pkg/logger"
+
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
+)
+
+type UserService struct {
+	userRepo   repositories.UserRepository
+	followRepo repositories.FollowRepository
+	logger     *logger.Logger
+}
+
+func NewUserService(userRepo repositories.UserRepository, followRepo repositories.FollowRepository, logger *logger.Logger) *UserService {
+	return &UserService{
+		userRepo:   userRepo,
+		followRepo: followRepo,
+		logger:     logger,
+	}
+}
+
+func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest) (*dto.UserResponse, error) {
+	s.logger.Info(fmt.Sprintf("Creating user with email: %s", req.Email))
+
+	// Check if user already exists
+	existingUser, err := s.userRepo.GetByEmail(ctx, req.Email)
+	if err == nil && existingUser != nil {
+		return nil, errors.ErrUserAlreadyExists
+	}
+
+	id := strings.TrimSpace(req.ID)
+	if id == "" {
+		id = uuid.New().String()
+	}
+
+	user := &entities.User{
+		ID:       id,
+		Email:    req.Email,
+		Name:     req.Name,
+		Picture:  req.Picture,
+		IsActive: true,
+	}
+
+	if req.Password != "" {
+		hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			s.logger.Error(fmt.Sprintf("Failed to hash password: %v", err))
+			return nil, errors.ErrUserCreationFailed
+		}
+		user.PasswordHash = string(hash)
+	}
+
+	user.Sanitize()
+	if err := user.IsValid(); err != nil {
+		s.logger.Warn(fmt.Sprintf("User validation failed: %v", err))
+		return nil, errors.ErrInvalidUserData
+	}
+
+	if err := s.userRepo.Create(ctx, user); err != nil {
+		s.logger.Error(fmt.Sprintf("Failed to create user: %v", err))
+		return nil, errors.ErrUserCreationFailed
+	}
+
+	s.logger.Info(fmt.Sprintf("User created successfully: %s", user.ID))
+
+	return &dto.UserResponse{
+		ID:        user.ID,
+		Email:     user.Email,
+		Name:      user.Name,
+		Picture:   user.Picture,
+		IsActive:  user.IsActive,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	}, nil
+}
+
+func (s *UserService) GetUser(ctx context.Context, id string) (*dto.UserResponse, error) {
+	s.logger.Info(fmt.Sprintf("Getting user: %s", id))
+
+	user, err := s.userRepo.GetByID(ctx, id)
+	if err != nil {
+		s.logger.Warn(fmt.Sprintf("User not found: %s", id))
+		return nil, errors.ErrUserNotFound
+	}
+
+	return &dto.UserResponse{
+		ID:        user.ID,
+		Email:     user.Email,
+		Name:      user.Name,
+		Picture:   user.Picture,
+		Bio:       user.Bio,
+		Location:  user.Location,
+		Website:   user.Website,
+		IsActive:  user.IsActive,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	}, nil
+}
+
+func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*dto.UserResponse, error) {
+	s.logger.Info(fmt.Sprintf("Getting user by email: %s", email))
+
+	user, err := s.userRepo.GetByEmail(ctx, email)
+	if err != nil {
+		s.logger.Warn(fmt.Sprintf("User not found by email: %s", email))
+		return nil, errors.ErrUserNotFound
+	}
+
+	return &dto.UserResponse{
+		ID:        user.ID,
+		Email:     user.Email,
+		Name:      user.Name,
+		Picture:   user.Picture,
+		Bio:       user.Bio,
+		Location:  user.Location,
+		Website:   user.Website,
+		IsActive:  user.IsActive,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	}, nil
+}
+
+func (s *UserService) GetUserProfile(ctx context.Context, id string) (*dto.UserProfileResponse, error) {
+	s.logger.Info(fmt.Sprintf("Getting user profile: %s", id))
+
+	user, err := s.userRepo.GetByID(ctx, id)
+	if err != nil {
+		s.logger.Warn(fmt.Sprintf("User not found: %s", id))
+		return nil, errors.ErrUserNotFound
+	}
+
+	profile := user.ToProfile()
+	return &dto.UserProfileResponse{
+		ID:       profile.ID,
+		Email:    profile.Email,
+		Name:     profile.Name,
+		Picture:  profile.Picture,
+		Bio:      profile.Bio,
+		Location: profile.Location,
+		Website:  profile.Website,
+	}, nil
+}
+
+func (s *UserService) UpdateUser(ctx context.Context, id string, req *dto.UpdateUserRequest) (*dto.UserResponse, error) {
+	s.logger.Info(fmt.Sprintf("Updating user: %s", id))
+
+	// Get existing user
+	user, err := s.userRepo.GetByID(ctx, id)
+	if err != nil {
+		s.logger.Warn(fmt.Sprintf("User not found for update: %s", id))
+		return nil, errors.ErrUserNotFound
+	}
+
+	// Update fields
+	if req.Name != nil {
+		user.Name = *req.Name
+	}
+	if req.Picture != nil {
+		user.Picture = *req.Picture
+	}
+	if req.Bio != nil {
+		user.Bio = *req.Bio
+	}
+	if req.Location != nil {
+		user.Location = *req.Location
+	}
+	if req.Website != nil {
+		user.Website = *req.Website
+	}
+
+	// Validate and sanitize
+	user.Sanitize()
+	if err := user.IsValid(); err != nil {
+		s.logger.Warn(fmt.Sprintf("User validation failed on update: %v", err))
+		return nil, errors.ErrInvalidUserData
+	}
+
+	// Update in database
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		s.logger.Error(fmt.Sprintf("Failed to update user: %v", err))
+		return nil, errors.ErrUserUpdateFailed
+	}
+
+	s.logger.Info(fmt.Sprintf("User updated successfully: %s", user.ID))
+
+	return &dto.UserResponse{
+		ID:        user.ID,
+		Email:     user.Email,
+		Name:      user.Name,
+		Picture:   user.Picture,
+		Bio:       user.Bio,
+		Location:  user.Location,
+		Website:   user.Website,
+		IsActive:  user.IsActive,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	}, nil
+}
+
+func (s *UserService) DeleteUser(ctx context.Context, id string) error {
+	s.logger.Info(fmt.Sprintf("Deleting user: %s", id))
+
+	if err := s.userRepo.Delete(ctx, id); err != nil {
+		s.logger.Error(fmt.Sprintf("Failed to delete user: %v", err))
+		return errors.ErrUserDeletionFailed
+	}
+
+	s.logger.Info(fmt.Sprintf("User deleted successfully: %s", id))
+	return nil
+}
+
+func (s *UserService) ListUsers(ctx context.Context, req *dto.ListUsersRequest) (*dto.ListUsersResponse, error) {
+	s.logger.Info(fmt.Sprintf("Listing users: limit=%d, offset=%d", req.Limit, req.Offset))
+
+	users, err := s.userRepo.List(ctx, req.Limit, req.Offset)
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("Failed to list users: %v", err))
+		return nil, errors.ErrUserListFailed
+	}
+
+	var userResponses []*dto.UserResponse
+	for _, user := range users {
+		userResponses = append(userResponses, &dto.UserResponse{
+			ID:        user.ID,
+			Email:     user.Email,
+			Name:      user.Name,
+			Picture:   user.Picture,
+			Bio:       user.Bio,
+			Location:  user.Location,
+			Website:   user.Website,
+			IsActive:  user.IsActive,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+		})
+	}
+
+	return &dto.ListUsersResponse{
+		Users:  userResponses,
+		Limit:  req.Limit,
+		Offset: req.Offset,
+		Total:  len(userResponses),
+	}, nil
+}
+
+func (s *UserService) SearchUsers(ctx context.Context, req *dto.SearchUsersRequest) (*dto.ListUsersResponse, error) {
+	s.logger.Info(fmt.Sprintf("Searching users: query=%s, limit=%d, offset=%d", req.Query, req.Limit, req.Offset))
+
+	users, err := s.userRepo.Search(ctx, req.Query, req.Limit, req.Offset)
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("Failed to search users: %v", err))
+		return nil, errors.ErrUserSearchFailed
+	}
+
+	var userResponses []*dto.UserResponse
+	for _, user := range users {
+		userResponses = append(userResponses, &dto.UserResponse{
+			ID:        user.ID,
+			Email:     user.Email,
+			Name:      user.Name,
+			Picture:   user.Picture,
+			Bio:       user.Bio,
+			Location:  user.Location,
+			Website:   user.Website,
+			IsActive:  user.IsActive,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+		})
+	}
+
+	return &dto.ListUsersResponse{
+		Users:  userResponses,
+		Limit:  req.Limit,
+		Offset: req.Offset,
+		Total:  len(userResponses),
+	}, nil
+}
+
+func (s *UserService) GetStats(ctx context.Context) (*dto.UserStatsResponse, error) {
+	s.logger.Info("Getting user statistics")
+
+	count, err := s.userRepo.GetActiveUsersCount(ctx)
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("Failed to get user stats: %v", err))
+		return nil, errors.ErrUserStatsFailed
+	}
+
+	return &dto.UserStatsResponse{
+		TotalActiveUsers: count,
+	}, nil
+}
+
+func (s *UserService) ValidateCredentials(ctx context.Context, email, password string) (*dto.ValidateCredentialsResponse, error) {
+	s.logger.Info(fmt.Sprintf("Validating credentials for email: %s", email))
+
+	user, err := s.userRepo.GetByEmail(ctx, email)
+	if err != nil || user == nil {
+		return nil, errors.ErrInvalidCredentials
+	}
+
+	if user.PasswordHash == "" {
+		s.logger.Warn("User has no password (OAuth-only account)")
+		return nil, errors.ErrInvalidCredentials
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+		s.logger.Warn("Invalid password")
+		return nil, errors.ErrInvalidCredentials
+	}
+
+	return &dto.ValidateCredentialsResponse{
+		ID:      user.ID,
+		Email:   user.Email,
+		Name:    user.Name,
+		Picture: user.Picture,
+	}, nil
+}
+
+func (s *UserService) Follow(ctx context.Context, followerID, followeeID string) error {
+	if followerID == followeeID {
+		return errors.ErrCannotFollowSelf
+	}
+	if _, err := s.userRepo.GetByID(ctx, followeeID); err != nil {
+		return errors.ErrUserNotFound
+	}
+	if err := s.followRepo.Create(ctx, followerID, followeeID); err != nil {
+		s.logger.Error(fmt.Sprintf("Follow create: %v", err))
+		return errors.ErrUserUpdateFailed
+	}
+	return nil
+}
+
+func (s *UserService) Unfollow(ctx context.Context, followerID, followeeID string) error {
+	if err := s.followRepo.Delete(ctx, followerID, followeeID); err != nil {
+		s.logger.Error(fmt.Sprintf("Unfollow: %v", err))
+		return errors.ErrUserUpdateFailed
+	}
+	return nil
+}
+
+func (s *UserService) GetFollowers(ctx context.Context, userID string, limit int, cursor string) ([]*dto.UserProfileResponse, string, error) {
+	users, nextCursor, err := s.followRepo.GetFollowers(ctx, userID, limit, cursor)
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("GetFollowers: %v", err))
+		return nil, "", errors.ErrUserListFailed
+	}
+	out := make([]*dto.UserProfileResponse, 0, len(users))
+	for _, u := range users {
+		out = append(out, &dto.UserProfileResponse{
+			ID:       u.ID,
+			Email:    u.Email,
+			Name:     u.Name,
+			Picture:  u.Picture,
+			Bio:      u.Bio,
+			Location: u.Location,
+			Website:  u.Website,
+		})
+	}
+	return out, nextCursor, nil
+}
+
+func (s *UserService) GetFollowing(ctx context.Context, userID string, limit int, cursor string) ([]*dto.UserProfileResponse, string, error) {
+	users, nextCursor, err := s.followRepo.GetFollowing(ctx, userID, limit, cursor)
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("GetFollowing: %v", err))
+		return nil, "", errors.ErrUserListFailed
+	}
+	out := make([]*dto.UserProfileResponse, 0, len(users))
+	for _, u := range users {
+		out = append(out, &dto.UserProfileResponse{
+			ID:       u.ID,
+			Email:    u.Email,
+			Name:     u.Name,
+			Picture:  u.Picture,
+			Bio:      u.Bio,
+			Location: u.Location,
+			Website:  u.Website,
+		})
+	}
+	return out, nextCursor, nil
+}
+
+func (s *UserService) AreFollowed(ctx context.Context, followerID string, followeeIDs []string) ([]string, error) {
+	if len(followeeIDs) == 0 {
+		return nil, nil
+	}
+	return s.followRepo.AreFollowed(ctx, followerID, followeeIDs)
+}

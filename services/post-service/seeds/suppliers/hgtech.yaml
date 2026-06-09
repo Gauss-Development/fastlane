@@ -1,0 +1,19 @@
+slug: hgtech
+name: HGTECH (Huagong Tech)
+name_zh: 华工科技
+city: Wuhan
+cluster: Wuhan
+country: CN
+capabilities: [transceiver, laser modules, optical components, sensors]
+certifications: [ISO 9001, ISO 14001, IATF 16949, RoHS, CE]
+founded_year: 1999
+employees: 3200
+facility_size_m2: 90000
+annual_output: 10M units
+on_time_rate: 91.8
+rating: 4.4
+verified_at: 2026-03-12T00:00:00Z
+photo_url: /seeds/photos/hgtech-facility.jpg
+audit_report_url: /seeds/audits/hgtech-2025.pdf
+contact_email: photonics@hgtech.com.cn
+contact_wechat: hgtech_official

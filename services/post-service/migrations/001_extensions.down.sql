@@ -1,0 +1,1 @@
+-- pgvector and pgcrypto are kept on rollback; dropping them would cascade into other tables.

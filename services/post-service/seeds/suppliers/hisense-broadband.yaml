@@ -1,0 +1,19 @@
+slug: hisense-broadband
+name: Hisense Broadband
+name_zh: 海信宽带
+city: Qingdao
+cluster: Qingdao
+country: CN
+capabilities: [transceiver, PON, GPON, XGS-PON, BOSA, 400G]
+certifications: [ISO 9001, ISO 14001, ISO 45001, RoHS]
+founded_year: 2003
+employees: 2500
+facility_size_m2: 60000
+annual_output: 25M units
+on_time_rate: 95.4
+rating: 4.7
+verified_at: 2026-02-28T00:00:00Z
+photo_url: /seeds/photos/hisense-broadband-facility.jpg
+audit_report_url: /seeds/audits/hisense-broadband-2025.pdf
+contact_email: optical@hisense-broadband.com
+contact_wechat: hbb_sales

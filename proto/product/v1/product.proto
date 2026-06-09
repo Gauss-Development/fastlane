@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package product.v1;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/nikitashilov/microblog_grpc/proto/product/v1;productv1";
+
+// Product mirrors the `products` row. Specs is intentionally Struct (free-form
+// JSON) so different categories — transceivers, fibers, lasers — can carry
+// their own structured attributes without proto churn. The hybrid AI search
+// still keys off top-level fields it knows: data_rate, form_factor, reach_km, etc.
+message Product {
+  string id              = 1;   // uuid
+  string supplier_id     = 2;   // uuid (suppliers.id)
+  string sku             = 3;
+  string name            = 4;
+  string name_zh         = 5;
+  string category        = 6;   // transceiver | fiber | laser | ...
+  google.protobuf.Struct specs = 7;
+  double price_usd       = 8;
+  int32  moq             = 9;
+  int32  stock_qty       = 10;
+  int32  lead_time_days  = 11;
+  string datasheet_url   = 12;
+  // embedding is intentionally omitted — it's an infra concern, not part of
+  // the public contract. The AI search service joins it server-side.
+  google.protobuf.Timestamp created_at = 13;
+}
+
+message CreateProductRequest {
+  Product product = 1;
+}
+
+message GetProductRequest {
+  string id = 1;
+}
+
+message ListProductsBySupplierRequest {
+  string supplier_id = 1;
+  int32  limit       = 2;
+  int32  offset      = 3;
+}
+
+message ListProductsResponse {
+  repeated Product products = 1;
+  int32 total = 2;
+}
+
+service ProductService {
+  rpc CreateProduct(CreateProductRequest)               returns (Product);
+  rpc GetProduct(GetProductRequest)                     returns (Product);
+  rpc ListProductsBySupplier(ListProductsBySupplierRequest) returns (ListProductsResponse);
+  rpc HealthCheck(google.protobuf.Empty)                returns (google.protobuf.Empty);
+}

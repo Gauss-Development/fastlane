@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package supplier.v1;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/nikitashilov/microblog_grpc/proto/supplier/v1;supplierv1";
+
+message Supplier {
+  string id                 = 1;   // uuid
+  string name               = 2;
+  string name_zh            = 3;
+  string city               = 4;
+  string country            = 5;   // default "CN"
+  string cluster            = 6;   // e.g. "Shenzhen", "Dongguan"
+  repeated string capabilities    = 7;
+  repeated string certifications  = 8;
+  int32  founded_year       = 9;
+  int32  employees          = 10;
+  int32  facility_size_m2   = 11;
+  string annual_output      = 12;
+  double on_time_rate       = 13;  // 0..100
+  double rating             = 14;  // 0..5
+  int32  order_count        = 15;
+  google.protobuf.Timestamp verified_at = 16;
+  string audit_report_url   = 17;
+  string photo_url          = 18;
+  string contact_email      = 19;
+  string contact_wechat     = 20;
+  google.protobuf.Timestamp created_at  = 21;
+}
+
+message CreateSupplierRequest {
+  Supplier supplier = 1;
+}
+
+message GetSupplierRequest {
+  string id = 1;
+}
+
+message ListSuppliersRequest {
+  int32 limit  = 1;
+  int32 offset = 2;
+  string cluster = 3;  // optional filter
+  bool   verified_only = 4;
+}
+
+message ListSuppliersResponse {
+  repeated Supplier suppliers = 1;
+  int32 total = 2;
+}
+
+service SupplierService {
+  rpc CreateSupplier(CreateSupplierRequest) returns (Supplier);
+  rpc GetSupplier(GetSupplierRequest)       returns (Supplier);
+  rpc ListSuppliers(ListSuppliersRequest)   returns (ListSuppliersResponse);
+  rpc HealthCheck(google.protobuf.Empty)    returns (google.protobuf.Empty);
+}

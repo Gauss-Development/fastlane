@@ -1,0 +1,14 @@
+DROP INDEX IF EXISTS idx_order_events_event_type;
+DROP INDEX IF EXISTS idx_order_events_order_occurred;
+DROP INDEX IF EXISTS idx_orders_status;
+DROP INDEX IF EXISTS idx_orders_supplier_created;
+DROP INDEX IF EXISTS idx_orders_buyer_created;
+DROP INDEX IF EXISTS idx_quotes_status;
+DROP INDEX IF EXISTS idx_quotes_supplier_id;
+DROP INDEX IF EXISTS idx_quotes_rfq_id;
+DROP INDEX IF EXISTS idx_rfqs_status;
+DROP INDEX IF EXISTS idx_rfqs_buyer_id;
+DROP INDEX IF EXISTS idx_products_category;
+DROP INDEX IF EXISTS idx_products_supplier_id;
+DROP INDEX IF EXISTS idx_products_embedding_ivfflat;
+DROP INDEX IF EXISTS idx_products_specs_gin;
