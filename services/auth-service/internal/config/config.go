@@ -16,6 +16,7 @@ type Config struct {
 	Redis                    RedisConfig
 	Google                   GoogleConfig
 	JWT                      JWTConfig
+	MagicLink                MagicLinkConfig
 	Services                 ServicesConfig
 	GRPCTLS                  GRPCTLSConfig
 	ServiceTransportSecurity string
@@ -64,6 +65,13 @@ type JWTConfig struct {
 	Issuer          string
 }
 
+// MagicLinkConfig governs supplier RFQ-response tokens. Secret may be empty:
+// a dedicated key is then derived from JWT_SECRET (see jwt.NewMagicLinkManager).
+type MagicLinkConfig struct {
+	Secret   string
+	TTLHours int
+}
+
 func Load() (*Config, error) {
 	cfg := &Config{
 		Port:        getEnv("PORT", "8081"),
@@ -94,6 +102,10 @@ func Load() (*Config, error) {
 			AccessTokenTTL:  getEnvAsInt("JWT_ACCESS_TTL", 15),   // 15 minutes
 			RefreshTokenTTL: getEnvAsInt("JWT_REFRESH_TTL", 168), // 7 days
 			Issuer:          getEnv("JWT_ISSUER", "auth-service"),
+		},
+		MagicLink: MagicLinkConfig{
+			Secret:   os.Getenv("MAGIC_LINK_JWT_SECRET"),
+			TTLHours: getEnvAsInt("MAGIC_LINK_TTL_HOURS", 336), // 14 days (GAU-249)
 		},
 		Services: ServicesConfig{
 			UserGRPCAddr: getEnv("USER_SERVICE_GRPC_ADDR", "localhost:50052"),

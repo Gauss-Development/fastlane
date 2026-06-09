@@ -209,6 +209,8 @@ services:
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15}
       JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-168}
       JWT_ISSUER: ${JWT_ISSUER:-auth-service}
+      MAGIC_LINK_JWT_SECRET: ${MAGIC_LINK_JWT_SECRET:-}
+      MAGIC_LINK_TTL_HOURS: ${MAGIC_LINK_TTL_HOURS:-336}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
     depends_on:
       redis:
@@ -297,6 +299,8 @@ services:
       RABBITMQ_URL: amqp://${RABBITMQ_USER:?RABBITMQ_USER is required}:${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD is required}@rabbitmq:5672/${RABBITMQ_VHOST:?RABBITMQ_VHOST is required}
       RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE:-microservices_events}
       RABBITMQ_ROUTING_KEY_POSTS: ${RABBITMQ_ROUTING_KEY_POSTS:-post.created}
+      AUTH_SERVICE_GRPC_ADDR: auth-service:50051
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
     depends_on:
       postgres_post:
         condition: service_healthy
@@ -336,7 +340,7 @@ services:
       RABBITMQ_URL: amqp://${RABBITMQ_USER:?RABBITMQ_USER is required}:${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD is required}@rabbitmq:5672/${RABBITMQ_VHOST:?RABBITMQ_VHOST is required}
       RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE:-microservices_events}
       RABBITMQ_QUEUE: ${RABBITMQ_QUEUE_NOTIFICATIONS:-post_notifications}
-      RABBITMQ_ROUTING_KEY: ${RABBITMQ_ROUTING_KEY_POSTS:-post.*}
+      RABBITMQ_ROUTING_KEY: ${RABBITMQ_NOTIFICATION_BINDINGS:-post.*,rfq.created,quote.submitted}
       RABBITMQ_DLX: ${RABBITMQ_DLX:-blog_events.dlx}
       RABBITMQ_DLQ: ${RABBITMQ_DLQ:-post_notifications_dlq}
       RABBITMQ_DLQ_ROUTING_KEY: ${RABBITMQ_DLQ_ROUTING_KEY:-post.failed}
@@ -345,6 +349,9 @@ services:
       RABBITMQ_MAX_RETRIES: ${RABBITMQ_MAX_RETRIES:-3}
       NOTIFICATION_CLEANUP_DAYS: ${NOTIFICATION_CLEANUP_DAYS:-30}
       NOTIFICATION_BATCH_SIZE: ${NOTIFICATION_BATCH_SIZE:-100}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-Fiberlane <rfq@fiberlane.dev>}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
     depends_on:
       postgres_notification:
         condition: service_healthy

@@ -39,13 +39,15 @@ type UserServiceClient interface {
 }
 
 type AuthService struct {
-	tokenRepo     repositories.TokenRepository
-	oauthProvider domainServices.OAuthProvider
-	userClient    UserServiceClient
-	jwtManager    *jwt.Manager
-	jwtConfig     config.JWTConfig
-	googleConfig  config.GoogleConfig
-	logger        *logger.Logger
+	tokenRepo        repositories.TokenRepository
+	oauthProvider    domainServices.OAuthProvider
+	userClient       UserServiceClient
+	jwtManager       *jwt.Manager
+	magicLinkManager *jwt.MagicLinkManager
+	jwtConfig        config.JWTConfig
+	magicLinkConfig  config.MagicLinkConfig
+	googleConfig     config.GoogleConfig
+	logger           *logger.Logger
 }
 
 func NewAuthService(
@@ -53,20 +55,54 @@ func NewAuthService(
 	oauthProvider domainServices.OAuthProvider,
 	userClient UserServiceClient,
 	jwtConfig config.JWTConfig,
+	magicLinkConfig config.MagicLinkConfig,
 	googleConfig config.GoogleConfig,
 	logger *logger.Logger,
 ) *AuthService {
 	jwtManager := jwt.NewManager(jwtConfig.Secret, jwtConfig.Issuer)
+	magicLinkManager := jwt.NewMagicLinkManager(magicLinkConfig.Secret, jwtConfig.Secret)
 
 	return &AuthService{
-		tokenRepo:     tokenRepo,
-		oauthProvider: oauthProvider,
-		userClient:    userClient,
-		jwtConfig:     jwtConfig,
-		googleConfig:  googleConfig,
-		jwtManager:    jwtManager,
-		logger:        logger,
+		tokenRepo:        tokenRepo,
+		oauthProvider:    oauthProvider,
+		userClient:       userClient,
+		jwtConfig:        jwtConfig,
+		magicLinkConfig:  magicLinkConfig,
+		googleConfig:     googleConfig,
+		jwtManager:       jwtManager,
+		magicLinkManager: magicLinkManager,
+		logger:           logger,
 	}
+}
+
+// IssueMagicLinkToken mints a supplier RFQ-response token scoped to one
+// (rfq_id, supplier_id) pair. Suppliers have no sessions; this token is the
+// only credential the magic-link page needs.
+func (s *AuthService) IssueMagicLinkToken(rfqID, supplierID string) (string, time.Time, error) {
+	if rfqID == "" || supplierID == "" {
+		return "", time.Time{}, errors.ErrInvalidRequest
+	}
+	ttl := time.Duration(s.magicLinkConfig.TTLHours) * time.Hour
+	token, expiresAt, err := s.magicLinkManager.Generate(rfqID, supplierID, ttl)
+	if err != nil {
+		s.logger.Error("failed to generate magic link token: " + err.Error())
+		return "", time.Time{}, errors.ErrTokenGeneration
+	}
+	return token, expiresAt, nil
+}
+
+// ValidateMagicLinkToken returns the (rfq_id, supplier_id) scope of a valid
+// token. Invalid or expired tokens are not errors — valid=false lets the
+// gateway render a clean expired-link page.
+func (s *AuthService) ValidateMagicLinkToken(token string) (valid bool, rfqID, supplierID string) {
+	if token == "" {
+		return false, "", ""
+	}
+	rfqID, supplierID, err := s.magicLinkManager.Validate(token)
+	if err != nil {
+		return false, "", ""
+	}
+	return true, rfqID, supplierID
 }
 
 // Main OAuth Flow: Get Google Auth URL.

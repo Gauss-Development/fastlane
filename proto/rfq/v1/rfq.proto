@@ -20,6 +20,8 @@ message RFQ {
   string shipping_address         = 9;
   string notes                    = 10;
   google.protobuf.Timestamp created_at = 11;
+  string buyer_email              = 12;  // denormalized at creation; notification emails need it
+  string buyer_company            = 13;  // shown to suppliers on the magic-link page
 }
 
 message Quote {
@@ -64,10 +66,25 @@ message AddQuoteRequest {
 
 message ListQuotesForRFQRequest {
   string rfq_id = 1;
+  string requesting_user_id = 2;   // gateway-passed; service enforces buyer ownership
 }
 
 message ListQuotesResponse {
   repeated Quote quotes = 1;
+}
+
+// Supplier-facing view, resolved from a validated magic-link token. The
+// gateway maps token -> (rfq_id, supplier_id); the service returns only what
+// the supplier RFQ response page needs (no buyer email).
+message GetRFQForSupplierRequest {
+  string rfq_id      = 1;
+  string supplier_id = 2;
+}
+
+message SupplierRFQView {
+  RFQ    rfq           = 1;  // buyer_email is blanked server-side
+  Quote  quote         = 2;  // this supplier's quote row (pending or submitted)
+  string supplier_name = 3;
 }
 
 service RFQService {
@@ -76,5 +93,6 @@ service RFQService {
   rpc ListRFQs(ListRFQsRequest)                    returns (ListRFQsResponse);
   rpc AddQuote(AddQuoteRequest)                    returns (Quote);
   rpc ListQuotesForRFQ(ListQuotesForRFQRequest)    returns (ListQuotesResponse);
+  rpc GetRFQForSupplier(GetRFQForSupplierRequest)  returns (SupplierRFQView);
   rpc HealthCheck(google.protobuf.Empty)           returns (google.protobuf.Empty);
 }

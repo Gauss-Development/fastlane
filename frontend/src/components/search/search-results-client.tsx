@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Modal } from "@/components/ui/modal";
 import { RouteIndicator } from "@/components/ui/route-indicator";
 import { StatusPill } from "@/components/ui/pill";
+import { createRFQ } from "@/lib/rfqs/client";
 import { search, type ParsedSpecs, type ProductHit, type ProductSpecs } from "@/lib/search/client";
 import { cn } from "@/lib/utils";
 
@@ -183,73 +184,110 @@ function ProductResultRow({
 
 function QuoteRequestModal({
   hit,
+  query,
+  specs,
   onClose,
 }: {
   hit: ProductHit | null;
+  query: string;
+  specs: ParsedSpecs | null;
   onClose: () => void;
 }) {
-  const [submitted, setSubmitted] = useState(false);
+  const router = useRouter();
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function close() {
+    setError(null);
+    setSubmitting(false);
+    onClose();
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!hit || submitting) return;
+
+    const form = new FormData(event.currentTarget);
+    const qty = Number(form.get("quantity") ?? 0);
+    if (!Number.isFinite(qty) || qty < 1) {
+      setError("Quantity must be at least 1.");
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      const rfq = await createRFQ({
+        queryText: query || `${hit.name} (${hit.sku})`,
+        parsedSpecs: specs,
+        matchedProductIds: [hit.id],
+        qty,
+        targetDate: String(form.get("target_date") ?? ""),
+        shippingAddress: String(form.get("shipping_address") ?? ""),
+        notes: String(form.get("notes") ?? ""),
+      });
+      router.push(`/rfqs/${encodeURIComponent(rfq.id)}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create RFQ.");
+      setSubmitting(false);
+    }
+  }
 
   return (
     <Modal
       open={Boolean(hit)}
-      onClose={() => {
-        setSubmitted(false);
-        onClose();
-      }}
+      onClose={close}
       title="Request quote"
-      description="GAU-249 will persist this RFQ and email suppliers with magic links. This pass wires the buyer search surface."
+      description="The supplier receives a magic-link email and responds without an account. You are emailed as quotes arrive."
     >
       {hit ? (
-        submitted ? (
-          <div className="space-y-4">
-            <StatusPill tone="warning">Not persisted yet</StatusPill>
-            <p className="text-sm text-muted-foreground">
-              Quote intent captured in the UI for <span className="font-mono text-foreground">{hit.sku}</span>.
-              The RFQ database record and supplier email dispatch are the next Linear issue.
-            </p>
-            <Button type="button" onClick={onClose}>Close</Button>
-          </div>
-        ) : (
-          <form
-            className="space-y-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              setSubmitted(true);
-            }}
-          >
-            <div className="rounded-sm border border-border bg-muted/30 p-3">
-              <div className="font-mono text-sm">{hit.sku}</div>
-              <div className="mt-1 text-sm text-muted-foreground">
-                {hit.name} • {hit.supplier_name}
-              </div>
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="rounded-sm border border-border bg-muted/30 p-3">
+            <div className="font-mono text-sm">{hit.sku}</div>
+            <div className="mt-1 text-sm text-muted-foreground">
+              {hit.name} • {hit.supplier_name}
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="quote-qty">Quantity</Label>
-                <Input id="quote-qty" name="quantity" type="number" min={1} defaultValue={Math.max(hit.moq || 1, 100)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="quote-date">Target date</Label>
-                <Input id="quote-date" name="target_date" type="date" />
-              </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="quote-qty">Quantity</Label>
+              <Input id="quote-qty" name="quantity" type="number" min={1} required defaultValue={Math.max(hit.moq || 1, 100)} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="quote-notes">Notes</Label>
-              <textarea
-                id="quote-notes"
-                name="notes"
-                rows={4}
-                className="w-full rounded-sm border border-input bg-input-background px-3 py-2 text-sm"
-                placeholder="Compatibility, labeling, warranty, or shipping constraints."
-              />
+              <Label htmlFor="quote-date">Target date</Label>
+              <Input id="quote-date" name="target_date" type="date" />
             </div>
-            <div className="flex gap-2">
-              <Button type="submit">Preview RFQ</Button>
-              <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            </div>
-          </form>
-        )
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="quote-address">Shipping address</Label>
+            <Input
+              id="quote-address"
+              name="shipping_address"
+              placeholder="San Francisco, CA, USA"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="quote-notes">Notes</Label>
+            <textarea
+              id="quote-notes"
+              name="notes"
+              rows={4}
+              className="w-full rounded-sm border border-input bg-input-background px-3 py-2 text-sm"
+              placeholder="Compatibility, labeling, warranty, or shipping constraints."
+            />
+          </div>
+          {error ? (
+            <p className="text-sm text-destructive">{error}</p>
+          ) : null}
+          <div className="flex gap-2">
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "Sending..." : "Request Quote"}
+            </Button>
+            <Button type="button" variant="outline" onClick={close} disabled={submitting}>
+              Cancel
+            </Button>
+          </div>
+        </form>
       ) : null}
     </Modal>
   );
@@ -438,7 +476,13 @@ export function SearchResultsClient({ initialQuery }: { initialQuery: string }) 
         </Card>
       ) : null}
 
-      <QuoteRequestModal hit={quoteHit} onClose={() => setQuoteHit(null)} />
+      <QuoteRequestModal
+        hit={quoteHit}
+        query={submittedQuery}
+        specs={effectiveSpecs}
+        onClose={() => setQuoteHit(null)}
+      />
+
     </main>
   );
 }

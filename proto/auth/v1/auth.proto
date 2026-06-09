@@ -100,6 +100,29 @@ message LoginRequest {
   string password = 2;
 }
 
+// Magic-link tokens let suppliers respond to a specific RFQ without an
+// account or session. Signed with a key separate from access/refresh tokens
+// and scoped to exactly one (rfq_id, supplier_id) pair.
+message IssueMagicLinkTokenRequest {
+  string rfq_id = 1;
+  string supplier_id = 2;
+}
+
+message IssueMagicLinkTokenResponse {
+  string token = 1;
+  int64 expires_at_unix = 2;
+}
+
+message ValidateMagicLinkTokenRequest {
+  string token = 1;
+}
+
+message ValidateMagicLinkTokenResponse {
+  bool valid = 1;
+  string rfq_id = 2;
+  string supplier_id = 3;
+}
+
 message LoginResponse {
   UserInfo user = 1;
   TokenPair tokens = 2;
@@ -114,5 +137,7 @@ service AuthService {
   rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
   rpc Register (RegisterRequest) returns (RegisterResponse);
   rpc Login (LoginRequest) returns (LoginResponse);
+  rpc IssueMagicLinkToken (IssueMagicLinkTokenRequest) returns (IssueMagicLinkTokenResponse);
+  rpc ValidateMagicLinkToken (ValidateMagicLinkTokenRequest) returns (ValidateMagicLinkTokenResponse);
   rpc HealthCheck (google.protobuf.Empty) returns (google.protobuf.Empty);
 }

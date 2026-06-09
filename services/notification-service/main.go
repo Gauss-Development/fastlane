@@ -15,6 +15,7 @@ import (
 	"notification-service/internal/application/services"
 	"notification-service/internal/config"
 	postgres "notification-service/internal/infrastructure"
+	"notification-service/internal/infrastructure/email"
 	"notification-service/internal/infrastructure/rabbitmq"
 	"notification-service/internal/interface/routes"
 	"notification-service/pkg/logger"
@@ -42,6 +43,13 @@ func main() {
 
 	notificationRepo := postgres.NewNotificationRepository(db)
 	notificationService := services.NewNotificationService(notificationRepo, appLogger)
+
+	emailSender := email.NewSender(cfg.Email.ResendAPIKey, cfg.Email.FromAddress, appLogger)
+	if !emailSender.Enabled() {
+		appLogger.Warn("RESEND_API_KEY not set: emails will be logged, not sent")
+	}
+	rfqEmailService := services.NewRFQEmailService(notificationService, emailSender, cfg.Email.FrontendURL, appLogger)
+
 	rabbitMQClient := rabbitmq.NewClient(cfg.RabbitMQ, appLogger)
 
 	if err := rabbitMQClient.Connect(); err != nil {
@@ -57,6 +65,10 @@ func main() {
 			return notificationService.ProcessPostUpdatedEvent(context.Background(), body)
 		case "post.deleted":
 			return notificationService.ProcessPostDeletedEvent(context.Background(), body)
+		case "rfq.created":
+			return rfqEmailService.ProcessRFQCreatedEvent(context.Background(), body)
+		case "quote.submitted":
+			return rfqEmailService.ProcessQuoteSubmittedEvent(context.Background(), body)
 		default:
 			appLogger.Warn("received unsupported routing key: " + routingKey)
 			return nil
