@@ -10,7 +10,7 @@ export default async function HomePage() {
 
   // Authenticated users go straight to the app; everyone else sees the landing.
   if (hasRefreshCookie) {
-    redirect("/app");
+    redirect("/dashboard");
   }
 
   return <Landing />;
