@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useThemeStore } from "@/lib/theme/theme-store";
 import { getResolvedTheme } from "@/lib/theme/apply-theme";
 import { useAuthStore } from "@/lib/stores/auth-store";
@@ -26,11 +25,7 @@ export default function ProfilePage() {
   const user = useAuthStore((state) => state.user);
   const preference = useThemeStore((state) => state.preference);
   const setPreference = useThemeStore((state) => state.setPreference);
-  const [resolved, setResolved] = useState<"dark" | "light">("dark");
-
-  useEffect(() => {
-    setResolved(getResolvedTheme(preference));
-  }, [preference]);
+  const resolved = getResolvedTheme(preference);
 
   return (
     <div className="flex flex-col">

@@ -1,52 +1,43 @@
 import { proxyGateway, toFailureResponse, toSuccessResponse } from "@/lib/server/gateway";
+import type { ParsedSpecs, SearchResponse } from "@/lib/search/types";
 
-export interface SearchUserHit {
-  id: string;
-  name: string;
-  picture: string;
-  bio: string;
+interface SearchRequestBody {
+  query?: unknown;
+  limit?: unknown;
+  spec_overrides?: ParsedSpecs | null;
 }
 
-export interface SearchPostHit {
-  id: string;
-  user_id: string;
-  title: string;
-  slug: string;
-  content_preview: string;
-  published: boolean;
-}
-
-export interface SearchData {
-  users: SearchUserHit[];
-  posts: SearchPostHit[];
-  users_next_cursor: string;
-  posts_next_cursor: string;
-  users_partial: boolean;
-  posts_partial: boolean;
-}
-
-export async function GET(request: Request) {
+export async function POST(request: Request) {
   const authorization = request.headers.get("authorization");
   if (!authorization) {
     return toFailureResponse(401, "UNAUTHORIZED", "Authentication required.");
   }
 
-  const { searchParams } = new URL(request.url);
-  const q = searchParams.get("q");
-  if (!q || q.trim() === "") {
+  let body: SearchRequestBody;
+  try {
+    body = (await request.json()) as SearchRequestBody;
+  } catch {
+    return toFailureResponse(400, "INVALID_BODY", "Request body must be valid JSON.");
+  }
+
+  const query = typeof body.query === "string" ? body.query.trim() : "";
+  if (!query) {
     return toFailureResponse(400, "MISSING_QUERY", "Search query is required.");
   }
 
-  const usersLimit = searchParams.get("users_limit") ?? "20";
-  const postsLimit = searchParams.get("posts_limit") ?? "20";
-  const usersCursor = searchParams.get("users_cursor") ?? "";
-  const postsCursor = searchParams.get("posts_cursor") ?? "";
+  const rawLimit = typeof body.limit === "number" && Number.isFinite(body.limit)
+    ? Math.trunc(body.limit)
+    : 20;
+  const limit = Math.min(Math.max(rawLimit, 1), 50);
 
-  const path = `/api/v1/search?q=${encodeURIComponent(q.trim())}&users_limit=${usersLimit}&posts_limit=${postsLimit}${usersCursor ? `&users_cursor=${encodeURIComponent(usersCursor)}` : ""}${postsCursor ? `&posts_cursor=${encodeURIComponent(postsCursor)}` : ""}`;
-
-  const { upstream, payload } = await proxyGateway<SearchData>(request, path, {
-    method: "GET",
+  const { upstream, payload } = await proxyGateway<SearchResponse>(request, "/api/v1/search", {
+    method: "POST",
     headers: { authorization },
+    body: JSON.stringify({
+      query,
+      limit,
+      spec_overrides: body.spec_overrides ?? null,
+    }),
   });
 
   if (!payload?.success || payload.data === undefined) {

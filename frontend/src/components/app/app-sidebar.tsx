@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Home, LogOut, PanelLeft, PanelLeftClose, User } from "lucide-react";
+import { LogOut, PanelLeft, PanelLeftClose } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/stores/auth-store";
@@ -16,12 +16,15 @@ const SIDEBAR_W_CLOSED = 56;
 type NavItem = {
   href: string;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  code: string;
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/app", label: "Dashboard", icon: Home },
-  { href: "/app/profile", label: "Profile", icon: User },
+  { href: "/dashboard", label: "Search", code: "01" },
+  { href: "/rfqs", label: "RFQs", code: "02" },
+  { href: "/orders", label: "Orders", code: "03" },
+  { href: "/suppliers", label: "Suppliers", code: "04" },
+  { href: "/app/profile", label: "Settings", code: "05" },
 ];
 
 export function AppSidebar() {
@@ -47,10 +50,10 @@ export function AppSidebar() {
       >
         {!collapsed && (
           <Link
-            href="/app"
+            href="/dashboard"
             className="font-mono text-sm font-bold tracking-[0.2em] text-foreground hover:text-primary transition-colors"
           >
-            MICROBLOG
+            FIBERLANE
           </Link>
         )}
         <Button
@@ -67,8 +70,10 @@ export function AppSidebar() {
       <nav className="flex flex-1 flex-col py-2">
         {NAV_ITEMS.map((item) => {
           const active =
-            pathname === item.href || pathname === item.href + "/";
-          const Icon = item.icon;
+            pathname === item.href ||
+            pathname === item.href + "/" ||
+            (item.href === "/dashboard" && pathname.startsWith("/search")) ||
+            (item.href !== "/dashboard" && pathname.startsWith(`${item.href}/`));
           return (
             <Link
               key={item.href}
@@ -83,7 +88,7 @@ export function AppSidebar() {
                 active && "border-l-primary text-foreground bg-accent",
               )}
             >
-              <Icon className="size-4 shrink-0" />
+              <span className="w-5 shrink-0 tabular-nums text-primary">{item.code}</span>
               {!collapsed && <span className="truncate">{item.label}</span>}
             </Link>
           );
