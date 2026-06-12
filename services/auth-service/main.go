@@ -52,7 +52,7 @@ func main() {
 	}
 	defer userClient.Close()
 
-	authService := services.NewAuthService(tokenRepo, googleProvider, userClientAdapter{userClient}, cfg.JWT, cfg.Google, appLogger)
+	authService := services.NewAuthService(tokenRepo, googleProvider, userClientAdapter{userClient}, cfg.JWT, cfg.MagicLink, cfg.Google, appLogger)
 
 	// Setup gRPC server with options
 	grpcOptions := []grpc.ServerOption{

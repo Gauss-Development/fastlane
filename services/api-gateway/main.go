@@ -48,6 +48,11 @@ func main() {
 	if err != nil {
 		appLogger.Fatal("Failed to connect to search service: " + err.Error())
 	}
+	// RFQService is hosted by post-service (post = inquiry/RFQ), same address.
+	rfqClient, err := clients.NewRFQClient(cfg.Services.PostGRPCAddr, cfg.GRPCTLS, appLogger)
+	if err != nil {
+		appLogger.Fatal("Failed to connect to rfq service: " + err.Error())
+	}
 
 	// Test service connections
 	if err := testServiceConnections(authClient, userClient, postClient, searchClient, appLogger); err != nil {
@@ -58,6 +63,7 @@ func main() {
 	userHandler := handlers.NewUserHandler(userClient, appLogger)
 	postHandler := handlers.NewPostHandler(postClient, appLogger)
 	searchHandler := handlers.NewSearchHandler(searchClient, appLogger)
+	rfqHandler := handlers.NewRFQHandler(rfqClient, authClient, appLogger)
 	healthHandler := handlers.NewHealthHandler(authClient, userClient, postClient, cfg.Services.NotificationURL, appLogger)
 
 	// Setup HTTP server
@@ -80,7 +86,7 @@ func main() {
 	router.Use(middleware.SecurityHeaders(cfg.Environment))
 
 	// Setup routes
-	routes.SetupRoutes(router, authHandler, userHandler, postHandler, searchHandler, healthHandler, authClient, redisClient, cfg)
+	routes.SetupRoutes(router, authHandler, userHandler, postHandler, searchHandler, rfqHandler, healthHandler, authClient, redisClient, cfg)
 
 	// Create HTTP server
 	server := &http.Server{

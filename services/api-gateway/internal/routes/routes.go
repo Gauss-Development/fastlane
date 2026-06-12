@@ -16,6 +16,7 @@ func SetupRoutes(
 	userHandler *handlers.UserHandler,
 	postHandler *handlers.PostHandler,
 	searchHandler *handlers.SearchHandler,
+	rfqHandler *handlers.RFQHandler,
 	healthHandler *handlers.HealthHandler,
 	authClient *clients.AuthClient,
 	redisClient *clients.RedisClient,
@@ -79,12 +80,29 @@ func SetupRoutes(
 			}
 		}
 
+		// Supplier magic-link RFQ surface: public, gated by the signed
+		// token in the path, not by a session (suppliers have no login).
+		supplierRFQ := v1.Group("/supplier-rfq")
+		{
+			supplierRFQ.GET("/:token", rfqHandler.SupplierGetRFQ)
+			supplierRFQ.POST("/:token/quote", rfqHandler.SupplierSubmitQuote)
+		}
+
 		// Protected routes (authentication required)
 		protectedGroup := v1.Group("")
 		protectedGroup.Use(middleware.AuthMiddleware(authClient))
 		{
 			// Hybrid AI product search (Claude spec extraction + pgvector ranking)
 			protectedGroup.POST("/search", searchHandler.Search)
+
+			// RFQ flow: buyer creates and tracks quote requests
+			rfqs := protectedGroup.Group("/rfqs")
+			{
+				rfqs.POST("", rfqHandler.CreateRFQ)
+				rfqs.GET("", rfqHandler.ListRFQs)
+				rfqs.GET("/:id", rfqHandler.GetRFQ)
+				rfqs.GET("/:id/quotes", rfqHandler.ListQuotes)
+			}
 
 			// User routes
 			users := protectedGroup.Group("/users")

@@ -17,9 +17,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"post-service/interfaces/http/routes"
 	"post-service/internal/application/services"
+	"post-service/internal/clients"
 	"post-service/internal/config"
 	"post-service/internal/infrastructure/postgres"
 	grpcinterface "post-service/internal/interfaces/grpc"
@@ -28,6 +30,7 @@ import (
 	"post-service/pkg/metrics"
 
 	postv1 "github.com/nikitashilov/microblog_grpc/proto/post/v1"
+	rfqv1 "github.com/nikitashilov/microblog_grpc/proto/rfq/v1"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
@@ -81,6 +84,33 @@ func main() {
 
 	postService := services.NewPostService(postRepo, eventPublisher, appLogger)
 
+	// RFQ flow uses pgx (sqlc-generated queries) alongside the legacy
+	// database/sql post repository.
+	pgxPool, err := pgxpool.New(context.Background(), cfg.Database.URL)
+	if err != nil {
+		appLogger.Fatal("Failed to create pgx pool: " + err.Error())
+	}
+	defer pgxPool.Close()
+
+	rfqRepo := postgres.NewRFQRepository(pgxPool)
+
+	var magicLinkIssuer services.MagicLinkIssuer
+	authClient, err := clients.NewAuthClient(cfg.AuthServiceGRPCAddr, cfg.GRPCTLS)
+	if err != nil {
+		appLogger.Warn("Auth client unavailable, RFQ emails will have no magic links: " + err.Error())
+	} else {
+		magicLinkIssuer = authClient
+		defer authClient.Close()
+	}
+
+	// A nil interface value must stay nil inside the service, hence the split
+	// assignment above.
+	var rfqPublisher services.RFQEventPublisher
+	if eventPublisher != nil {
+		rfqPublisher = eventPublisher
+	}
+	rfqService := services.NewRFQService(rfqRepo, magicLinkIssuer, rfqPublisher, cfg.FrontendURL, appLogger)
+
 	// Setup gRPC server with options
 	grpcOptions := []grpc.ServerOption{
 		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
@@ -109,6 +139,7 @@ func main() {
 
 	grpcServer := grpc.NewServer(grpcOptions...)
 	postv1.RegisterPostServiceServer(grpcServer, grpcinterface.NewPostServer(postService, appLogger))
+	rfqv1.RegisterRFQServiceServer(grpcServer, grpcinterface.NewRFQServer(rfqService, appLogger))
 	if cfg.EnableGRPCReflection {
 		grpc_reflection.Register(grpcServer)
 	}

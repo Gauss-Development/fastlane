@@ -18,6 +18,11 @@ type Config struct {
 	ServiceTransportSecurity string
 	InternalHTTPTrustMode    string
 	EnableGRPCReflection     bool
+
+	// RFQ flow: magic links are minted by auth-service and embedded into
+	// FRONTEND_URL/q/<token> supplier links.
+	AuthServiceGRPCAddr string
+	FrontendURL         string
 }
 
 type DatabaseConfig struct {
@@ -68,6 +73,8 @@ func Load() (*Config, error) {
 		ServiceTransportSecurity: resolveTransportSecurityMode(getEnv("SERVICE_TRANSPORT_SECURITY", ""), getEnv("ENVIRONMENT", "development"), getEnvAsBool("GRPC_TLS_ENABLED", false)),
 		InternalHTTPTrustMode:    resolveInternalHTTPTrustMode(getEnv("INTERNAL_HTTP_TRUST_MODE", ""), getEnv("ENVIRONMENT", "development")),
 		EnableGRPCReflection:     getEnvAsBool("GRPC_REFLECTION_ENABLED", getEnv("ENVIRONMENT", "development") != "production"),
+		AuthServiceGRPCAddr:      getEnv("AUTH_SERVICE_GRPC_ADDR", "auth-service:50051"),
+		FrontendURL:              getEnv("FRONTEND_URL", "http://localhost:3000"),
 	}
 
 	if err := cfg.validate(); err != nil {

@@ -119,6 +119,26 @@ func (s *AuthServer) ValidateToken(ctx context.Context, req *authv1.ValidateToke
 	}, nil
 }
 
+func (s *AuthServer) IssueMagicLinkToken(ctx context.Context, req *authv1.IssueMagicLinkTokenRequest) (*authv1.IssueMagicLinkTokenResponse, error) {
+	token, expiresAt, err := s.service.IssueMagicLinkToken(req.GetRfqId(), req.GetSupplierId())
+	if err != nil {
+		return nil, s.toGRPCError(err)
+	}
+	return &authv1.IssueMagicLinkTokenResponse{
+		Token:         token,
+		ExpiresAtUnix: expiresAt.Unix(),
+	}, nil
+}
+
+func (s *AuthServer) ValidateMagicLinkToken(ctx context.Context, req *authv1.ValidateMagicLinkTokenRequest) (*authv1.ValidateMagicLinkTokenResponse, error) {
+	valid, rfqID, supplierID := s.service.ValidateMagicLinkToken(req.GetToken())
+	return &authv1.ValidateMagicLinkTokenResponse{
+		Valid:      valid,
+		RfqId:      rfqID,
+		SupplierId: supplierID,
+	}, nil
+}
+
 func (s *AuthServer) Register(ctx context.Context, req *authv1.RegisterRequest) (*authv1.RegisterResponse, error) {
 	resp, err := s.service.Register(ctx, req.GetEmail(), req.GetPassword(), req.GetName())
 	if err != nil {

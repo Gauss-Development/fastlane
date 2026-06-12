@@ -15,6 +15,7 @@ type Config struct {
 	RabbitMQ              RabbitMQConfig
 	InternalHTTPTrustMode string
 	Notification          NotificationConfig
+	Email                 EmailConfig
 }
 
 type DatabaseConfig struct {
@@ -28,7 +29,7 @@ type RabbitMQConfig struct {
 	URL            string
 	ExchangeName   string
 	QueueName      string
-	RoutingKey     string
+	RoutingKey     string // comma-separated binding keys, e.g. "post.created,rfq.created,quote.submitted"
 	DLXName        string
 	DLQName        string
 	DLQRoutingKey  string
@@ -37,9 +38,30 @@ type RabbitMQConfig struct {
 	MaxRetries     int
 }
 
+// RoutingKeys splits the comma-separated RABBITMQ_ROUTING_KEY into the
+// binding keys for the consumer queue.
+func (c RabbitMQConfig) RoutingKeys() []string {
+	parts := strings.Split(c.RoutingKey, ",")
+	keys := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if key := strings.TrimSpace(part); key != "" {
+			keys = append(keys, key)
+		}
+	}
+	return keys
+}
+
 type NotificationConfig struct {
 	CleanupDays int
 	BatchSize   int
+}
+
+// EmailConfig drives the Resend transactional sender. With an empty API key
+// the service logs emails instead of sending, so dev/CI run without secrets.
+type EmailConfig struct {
+	ResendAPIKey string
+	FromAddress  string
+	FrontendURL  string
 }
 
 func Load() (*Config, error) {
@@ -57,7 +79,7 @@ func Load() (*Config, error) {
 			URL:            getEnv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672/"),
 			ExchangeName:   getEnv("RABBITMQ_EXCHANGE", "blog_events"),
 			QueueName:      getEnv("RABBITMQ_QUEUE", "post_notifications"),
-			RoutingKey:     getEnv("RABBITMQ_ROUTING_KEY", "post.created"),
+			RoutingKey:     getEnv("RABBITMQ_ROUTING_KEY", "post.created,rfq.created,quote.submitted"),
 			DLXName:        getEnv("RABBITMQ_DLX", "blog_events.dlx"),
 			DLQName:        getEnv("RABBITMQ_DLQ", "post_notifications_dlq"),
 			DLQRoutingKey:  getEnv("RABBITMQ_DLQ_ROUTING_KEY", "post.failed"),
@@ -69,6 +91,11 @@ func Load() (*Config, error) {
 		Notification: NotificationConfig{
 			CleanupDays: getEnvAsInt("NOTIFICATION_CLEANUP_DAYS", 30),
 			BatchSize:   getEnvAsInt("NOTIFICATION_BATCH_SIZE", 100),
+		},
+		Email: EmailConfig{
+			ResendAPIKey: os.Getenv("RESEND_API_KEY"),
+			FromAddress:  getEnv("RESEND_FROM_EMAIL", "Fiberlane <rfq@fiberlane.dev>"),
+			FrontendURL:  getEnv("FRONTEND_URL", "http://localhost:3000"),
 		},
 	}
 

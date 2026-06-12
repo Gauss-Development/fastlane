@@ -87,15 +87,15 @@ func (c *Client) Connect() error {
 		return fmt.Errorf("failed to declare queue: %w", err)
 	}
 
-	err = c.channel.QueueBind(
-		queue.Name,
-		c.config.RoutingKey,
-		c.config.ExchangeName,
-		false,
-		nil)
-
-	if err != nil {
-		return fmt.Errorf("failed to bind queue: %w", err)
+	for _, key := range c.config.RoutingKeys() {
+		if err := c.channel.QueueBind(
+			queue.Name,
+			key,
+			c.config.ExchangeName,
+			false,
+			nil); err != nil {
+			return fmt.Errorf("failed to bind queue to %q: %w", key, err)
+		}
 	}
 
 	dlq, err := c.channel.QueueDeclare(

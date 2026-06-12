@@ -142,6 +142,20 @@ func (c *AuthClient) ValidateToken(ctx context.Context, token string) (*authv1.V
 	return resp, nil
 }
 
+// ValidateMagicLinkToken resolves a supplier magic-link token to its
+// (rfq_id, supplier_id) scope. valid=false is returned in the response, not
+// as an error, so handlers can render a clean expired-link state.
+func (c *AuthClient) ValidateMagicLinkToken(ctx context.Context, token string) (*authv1.ValidateMagicLinkTokenResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, defaultAuthTimeout)
+	defer cancel()
+
+	resp, err := c.client.ValidateMagicLinkToken(ctx, &authv1.ValidateMagicLinkTokenRequest{Token: token})
+	if err != nil {
+		return nil, c.wrapError("validate magic link token", err)
+	}
+	return resp, nil
+}
+
 func (c *AuthClient) Register(ctx context.Context, email, password, name string) (*authv1.RegisterResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, defaultAuthTimeout)
 	defer cancel()

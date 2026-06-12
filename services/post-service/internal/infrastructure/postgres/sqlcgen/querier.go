@@ -11,21 +11,37 @@ import (
 )
 
 type Querier interface {
+	CountRFQsByBuyer(ctx context.Context, arg CountRFQsByBuyerParams) (int32, error)
 	CountSuppliers(ctx context.Context, arg CountSuppliersParams) (int32, error)
+	CreatePendingQuote(ctx context.Context, arg CreatePendingQuoteParams) (Quote, error)
 	CreateProduct(ctx context.Context, arg CreateProductParams) (Product, error)
+	CreateRFQ(ctx context.Context, arg CreateRFQParams) (Rfq, error)
 	CreateSupplier(ctx context.Context, arg CreateSupplierParams) (Supplier, error)
 	GetProductByID(ctx context.Context, id pgtype.UUID) (Product, error)
 	GetProductBySupplierSKU(ctx context.Context, arg GetProductBySupplierSKUParams) (Product, error)
+	GetQuoteForSupplier(ctx context.Context, arg GetQuoteForSupplierParams) (Quote, error)
+	GetRFQByID(ctx context.Context, id string) (Rfq, error)
 	GetSupplierByID(ctx context.Context, id pgtype.UUID) (Supplier, error)
 	GetSupplierByName(ctx context.Context, name string) (Supplier, error)
+	ListProductsByIDs(ctx context.Context, dollar_1 []pgtype.UUID) ([]ListProductsByIDsRow, error)
 	ListProductsBySupplier(ctx context.Context, arg ListProductsBySupplierParams) ([]Product, error)
 	// Used by cmd/embed CLI to find products that still need an embedding.
 	ListProductsMissingEmbedding(ctx context.Context, limit int32) ([]Product, error)
 	// Same as above, but joins the supplier so the embedding-text builder has
 	// everything it needs (supplier name, city, cluster) without an N+1 lookup.
 	ListProductsMissingEmbeddingWithSupplier(ctx context.Context, limit int32) ([]ListProductsMissingEmbeddingWithSupplierRow, error)
+	ListQuotesForRFQ(ctx context.Context, rfqID string) ([]Quote, error)
+	ListRFQsByBuyer(ctx context.Context, arg ListRFQsByBuyerParams) ([]Rfq, error)
 	ListSuppliers(ctx context.Context, arg ListSuppliersParams) ([]Supplier, error)
+	ListSuppliersByIDs(ctx context.Context, dollar_1 []pgtype.UUID) ([]ListSuppliersByIDsRow, error)
+	NextQuoteSeq(ctx context.Context) (int64, error)
+	NextRFQSeq(ctx context.Context) (int64, error)
+	// The pending row was created with the RFQ; submission fills in commercial
+	// terms. Guarding on status = 'pending' makes re-submission a no-rows error
+	// instead of silently overwriting an accepted/rejected quote.
+	SubmitQuote(ctx context.Context, arg SubmitQuoteParams) (Quote, error)
 	UpdateProductEmbedding(ctx context.Context, arg UpdateProductEmbeddingParams) error
+	UpdateRFQStatus(ctx context.Context, arg UpdateRFQStatusParams) (Rfq, error)
 	// Idempotent on (supplier_id, sku); seed re-runs UPDATE in place. The existing
 	// embedding is preserved on conflict so re-seeding doesn't invalidate the
 	// already-computed vector (which is expensive to regenerate).
