@@ -13,6 +13,8 @@ COPY services/api-gateway/go.mod services/api-gateway/go.sum /workspace/services
 
 # Download dependencies
 WORKDIR /workspace/services/api-gateway
+COPY certs/ /tmp/certs/
+RUN find /tmp/certs -name '*.crt' -exec cat {} >> /etc/ssl/certs/ca-certificates.crt \;
 RUN go mod download
 
 # Copy source code

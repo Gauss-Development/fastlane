@@ -148,6 +148,9 @@ func (c *Config) validate() error {
 	if c.JWT.Secret == "" || len(c.JWT.Secret) < 32 {
 		return fmt.Errorf("JWT_SECRET must be at least 32 characters")
 	}
+	if c.MagicLink.Secret != "" && len(c.MagicLink.Secret) < 32 {
+		return fmt.Errorf("MAGIC_LINK_JWT_SECRET must be at least 32 characters when set")
+	}
 	if c.Environment == "production" && strings.TrimSpace(c.Redis.Password) == "" {
 		return fmt.Errorf("REDIS_PASSWORD is required in production")
 	}
@@ -172,19 +175,8 @@ func (c *Config) validate() error {
 		return fmt.Errorf("GRPC_REFLECTION_ENABLED cannot be true in production")
 	}
 
-	//// Validate redirect URL
-	//if !isValidRedirectURL(c.Google.RedirectURL) {
-	//	return fmt.Errorf("invalid redirect URL")
-	//}
-
 	return nil
 }
-
-//func isValidRedirectURL(url string) bool {
-//	allowedHosts := []string{"localhost", "your-domain.com"}
-//
-//	return true
-//}
 
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {

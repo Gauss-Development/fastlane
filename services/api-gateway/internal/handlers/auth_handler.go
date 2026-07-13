@@ -39,6 +39,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		Email    string `json:"email" binding:"required,email"`
 		Password string `json:"password" binding:"required,min=8"`
 		Name     string `json:"name" binding:"required,min=1,max=100"`
+		Role     string `json:"role"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -47,7 +48,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.authClient.Register(c.Request.Context(), req.Email, req.Password, req.Name)
+	resp, err := h.authClient.Register(c.Request.Context(), req.Email, req.Password, req.Name, req.Role)
 	if err != nil {
 		if st, ok := status.FromError(err); ok && st.Code() == codes.AlreadyExists {
 			utils.ErrorResponse(c, http.StatusConflict, "USER_ALREADY_EXISTS", "User with this email already exists")
@@ -301,6 +302,7 @@ func toTokenValidationResponse(resp *authv1.ValidateTokenResponse) *models.Token
 		Valid:  resp.GetValid(),
 		UserID: resp.GetUserId(),
 		Email:  resp.GetEmail(),
+		Role:   resp.GetRole(),
 	}
 }
 

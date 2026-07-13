@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"strings"
 
@@ -16,16 +17,14 @@ import (
 )
 
 type UserService struct {
-	userRepo   repositories.UserRepository
-	followRepo repositories.FollowRepository
-	logger     *logger.Logger
+	userRepo repositories.UserRepository
+	logger   *logger.Logger
 }
 
-func NewUserService(userRepo repositories.UserRepository, followRepo repositories.FollowRepository, logger *logger.Logger) *UserService {
+func NewUserService(userRepo repositories.UserRepository, logger *logger.Logger) *UserService {
 	return &UserService{
-		userRepo:   userRepo,
-		followRepo: followRepo,
-		logger:     logger,
+		userRepo: userRepo,
+		logger:   logger,
 	}
 }
 
@@ -36,6 +35,10 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 	existingUser, err := s.userRepo.GetByEmail(ctx, req.Email)
 	if err == nil && existingUser != nil {
 		return nil, errors.ErrUserAlreadyExists
+	}
+	if err != nil && !strings.Contains(err.Error(), "user not found") {
+		s.logger.Error(fmt.Sprintf("Failed to check existing user: %v", err))
+		return nil, errors.ErrUserCreationFailed
 	}
 
 	id := strings.TrimSpace(req.ID)
@@ -48,6 +51,8 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 		Email:    req.Email,
 		Name:     req.Name,
 		Picture:  req.Picture,
+		Role:     req.Role,
+		Company:  req.Company,
 		IsActive: true,
 	}
 
@@ -67,6 +72,9 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 	}
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
+		if stderrors.Is(err, errors.ErrUserAlreadyExists) {
+			return nil, errors.ErrUserAlreadyExists
+		}
 		s.logger.Error(fmt.Sprintf("Failed to create user: %v", err))
 		return nil, errors.ErrUserCreationFailed
 	}
@@ -78,6 +86,8 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 		Email:     user.Email,
 		Name:      user.Name,
 		Picture:   user.Picture,
+		Role:      user.Role,
+		Company:   user.Company,
 		IsActive:  user.IsActive,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
@@ -101,6 +111,8 @@ func (s *UserService) GetUser(ctx context.Context, id string) (*dto.UserResponse
 		Bio:       user.Bio,
 		Location:  user.Location,
 		Website:   user.Website,
+		Role:      user.Role,
+		Company:   user.Company,
 		IsActive:  user.IsActive,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
@@ -124,6 +136,8 @@ func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*dto.Us
 		Bio:       user.Bio,
 		Location:  user.Location,
 		Website:   user.Website,
+		Role:      user.Role,
+		Company:   user.Company,
 		IsActive:  user.IsActive,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
@@ -148,6 +162,8 @@ func (s *UserService) GetUserProfile(ctx context.Context, id string) (*dto.UserP
 		Bio:      profile.Bio,
 		Location: profile.Location,
 		Website:  profile.Website,
+		Role:     profile.Role,
+		Company:  profile.Company,
 	}, nil
 }
 
@@ -201,6 +217,8 @@ func (s *UserService) UpdateUser(ctx context.Context, id string, req *dto.Update
 		Bio:       user.Bio,
 		Location:  user.Location,
 		Website:   user.Website,
+		Role:      user.Role,
+		Company:   user.Company,
 		IsActive:  user.IsActive,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
@@ -238,6 +256,8 @@ func (s *UserService) ListUsers(ctx context.Context, req *dto.ListUsersRequest) 
 			Bio:       user.Bio,
 			Location:  user.Location,
 			Website:   user.Website,
+			Role:      user.Role,
+			Company:   user.Company,
 			IsActive:  user.IsActive,
 			CreatedAt: user.CreatedAt,
 			UpdatedAt: user.UpdatedAt,
@@ -271,6 +291,8 @@ func (s *UserService) SearchUsers(ctx context.Context, req *dto.SearchUsersReque
 			Bio:       user.Bio,
 			Location:  user.Location,
 			Website:   user.Website,
+			Role:      user.Role,
+			Company:   user.Company,
 			IsActive:  user.IsActive,
 			CreatedAt: user.CreatedAt,
 			UpdatedAt: user.UpdatedAt,
@@ -323,75 +345,4 @@ func (s *UserService) ValidateCredentials(ctx context.Context, email, password s
 		Name:    user.Name,
 		Picture: user.Picture,
 	}, nil
-}
-
-func (s *UserService) Follow(ctx context.Context, followerID, followeeID string) error {
-	if followerID == followeeID {
-		return errors.ErrCannotFollowSelf
-	}
-	if _, err := s.userRepo.GetByID(ctx, followeeID); err != nil {
-		return errors.ErrUserNotFound
-	}
-	if err := s.followRepo.Create(ctx, followerID, followeeID); err != nil {
-		s.logger.Error(fmt.Sprintf("Follow create: %v", err))
-		return errors.ErrUserUpdateFailed
-	}
-	return nil
-}
-
-func (s *UserService) Unfollow(ctx context.Context, followerID, followeeID string) error {
-	if err := s.followRepo.Delete(ctx, followerID, followeeID); err != nil {
-		s.logger.Error(fmt.Sprintf("Unfollow: %v", err))
-		return errors.ErrUserUpdateFailed
-	}
-	return nil
-}
-
-func (s *UserService) GetFollowers(ctx context.Context, userID string, limit int, cursor string) ([]*dto.UserProfileResponse, string, error) {
-	users, nextCursor, err := s.followRepo.GetFollowers(ctx, userID, limit, cursor)
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("GetFollowers: %v", err))
-		return nil, "", errors.ErrUserListFailed
-	}
-	out := make([]*dto.UserProfileResponse, 0, len(users))
-	for _, u := range users {
-		out = append(out, &dto.UserProfileResponse{
-			ID:       u.ID,
-			Email:    u.Email,
-			Name:     u.Name,
-			Picture:  u.Picture,
-			Bio:      u.Bio,
-			Location: u.Location,
-			Website:  u.Website,
-		})
-	}
-	return out, nextCursor, nil
-}
-
-func (s *UserService) GetFollowing(ctx context.Context, userID string, limit int, cursor string) ([]*dto.UserProfileResponse, string, error) {
-	users, nextCursor, err := s.followRepo.GetFollowing(ctx, userID, limit, cursor)
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("GetFollowing: %v", err))
-		return nil, "", errors.ErrUserListFailed
-	}
-	out := make([]*dto.UserProfileResponse, 0, len(users))
-	for _, u := range users {
-		out = append(out, &dto.UserProfileResponse{
-			ID:       u.ID,
-			Email:    u.Email,
-			Name:     u.Name,
-			Picture:  u.Picture,
-			Bio:      u.Bio,
-			Location: u.Location,
-			Website:  u.Website,
-		})
-	}
-	return out, nextCursor, nil
-}
-
-func (s *UserService) AreFollowed(ctx context.Context, followerID string, followeeIDs []string) ([]string, error) {
-	if len(followeeIDs) == 0 {
-		return nil, nil
-	}
-	return s.followRepo.AreFollowed(ctx, followerID, followeeIDs)
 }

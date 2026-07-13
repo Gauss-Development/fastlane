@@ -4,10 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 	"time"
 
+	appErrors "user-service/internal/application/errors"
 	"user-service/internal/domain/entities"
+
+	"github.com/lib/pq"
 )
 
 type UserRepository struct {
@@ -20,17 +22,17 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 
 func (r *UserRepository) Create(ctx context.Context, user *entities.User) error {
 	query := `
-		INSERT INTO users (id, email, name, picture, password_hash, bio, location, website, is_active, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		INSERT INTO users (id, email, name, picture, password_hash, bio, location, website, role, company, is_active, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 	`
 	now := time.Now()
 	_, err := r.db.ExecContext(ctx, query,
 		user.ID, user.Email, user.Name, user.Picture, nullIfEmpty(user.PasswordHash), user.Bio,
-		user.Location, user.Website, user.IsActive, now, now)
+		user.Location, user.Website, user.Role, user.Company, user.IsActive, now, now)
 
 	if err != nil {
-		if strings.Contains(err.Error(), "duplicate key") {
-			return fmt.Errorf("user with email %s already exists", user.Email)
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+			return appErrors.ErrUserAlreadyExists
 		}
 		return fmt.Errorf("failed to create user: %w", err)
 	}
@@ -42,14 +44,14 @@ func (r *UserRepository) Create(ctx context.Context, user *entities.User) error 
 
 func (r *UserRepository) GetByID(ctx context.Context, id string) (*entities.User, error) {
 	query := `
-		SELECT id, email, name, picture, COALESCE(password_hash, ''), bio, location, website, is_active, created_at, updated_at
+		SELECT id, email, name, picture, COALESCE(password_hash, ''), bio, location, website, role, COALESCE(company, ''), is_active, created_at, updated_at
 		FROM users 
 		WHERE id = $1 AND is_active = true
 	`
 	user := &entities.User{}
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&user.ID, &user.Email, &user.Name, &user.Picture, &user.PasswordHash, &user.Bio,
-		&user.Location, &user.Website, &user.IsActive, &user.CreatedAt, &user.UpdatedAt,
+		&user.Location, &user.Website, &user.Role, &user.Company, &user.IsActive, &user.CreatedAt, &user.UpdatedAt,
 	)
 
 	if err != nil {
@@ -64,14 +66,14 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*entities.User
 
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*entities.User, error) {
 	query := `
-		SELECT id, email, name, picture, COALESCE(password_hash, ''), bio, location, website, is_active, created_at, updated_at
+		SELECT id, email, name, picture, COALESCE(password_hash, ''), bio, location, website, role, COALESCE(company, ''), is_active, created_at, updated_at
 		FROM users 
 		WHERE email = $1 AND is_active = true
 	`
 	user := &entities.User{}
 	err := r.db.QueryRowContext(ctx, query, email).Scan(
 		&user.ID, &user.Email, &user.Name, &user.Picture, &user.PasswordHash, &user.Bio,
-		&user.Location, &user.Website, &user.IsActive, &user.CreatedAt, &user.UpdatedAt,
+		&user.Location, &user.Website, &user.Role, &user.Company, &user.IsActive, &user.CreatedAt, &user.UpdatedAt,
 	)
 
 	if err != nil {
@@ -133,7 +135,7 @@ func (r *UserRepository) Delete(ctx context.Context, id string) error {
 
 func (r *UserRepository) List(ctx context.Context, limit, offset int) ([]*entities.User, error) {
 	query := `
-		SELECT id, email, name, picture, COALESCE(password_hash, ''), bio, location, website, is_active, created_at, updated_at
+		SELECT id, email, name, picture, COALESCE(password_hash, ''), bio, location, website, role, COALESCE(company, ''), is_active, created_at, updated_at
 		FROM users 
 		WHERE is_active = true
 		ORDER BY created_at DESC
@@ -150,7 +152,7 @@ func (r *UserRepository) List(ctx context.Context, limit, offset int) ([]*entiti
 		user := &entities.User{}
 		err := rows.Scan(
 			&user.ID, &user.Email, &user.Name, &user.Picture, &user.PasswordHash, &user.Bio,
-			&user.Location, &user.Website, &user.IsActive, &user.CreatedAt, &user.UpdatedAt,
+			&user.Location, &user.Website, &user.Role, &user.Company, &user.IsActive, &user.CreatedAt, &user.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan user: %w", err)
@@ -167,7 +169,7 @@ func (r *UserRepository) List(ctx context.Context, limit, offset int) ([]*entiti
 
 func (r *UserRepository) Search(ctx context.Context, query string, limit, offset int) ([]*entities.User, error) {
 	searchQuery := `
-		SELECT id, email, name, picture, COALESCE(password_hash, ''), bio, location, website, is_active, created_at, updated_at
+		SELECT id, email, name, picture, COALESCE(password_hash, ''), bio, location, website, role, COALESCE(company, ''), is_active, created_at, updated_at
 		FROM users 
 		WHERE is_active = true
 		AND to_tsvector('simple', COALESCE(name, '') || ' ' || COALESCE(email, '')) @@ plainto_tsquery('simple', $1)
@@ -188,7 +190,7 @@ func (r *UserRepository) Search(ctx context.Context, query string, limit, offset
 		user := &entities.User{}
 		err := rows.Scan(
 			&user.ID, &user.Email, &user.Name, &user.Picture, &user.PasswordHash, &user.Bio,
-			&user.Location, &user.Website, &user.IsActive, &user.CreatedAt, &user.UpdatedAt,
+			&user.Location, &user.Website, &user.Role, &user.Company, &user.IsActive, &user.CreatedAt, &user.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan user: %w", err)
@@ -201,18 +203,6 @@ func (r *UserRepository) Search(ctx context.Context, query string, limit, offset
 	}
 
 	return users, nil
-}
-
-func (r *UserRepository) Exists(ctx context.Context, id string) (bool, error) {
-	query := `SELECT EXISTS(SELECT 1 FROM users WHERE id = $1 AND is_active = true)`
-
-	var exists bool
-	err := r.db.QueryRowContext(ctx, query, id).Scan(&exists)
-	if err != nil {
-		return false, fmt.Errorf("failed to check user existence: %w", err)
-	}
-
-	return exists, nil
 }
 
 func (r *UserRepository) GetActiveUsersCount(ctx context.Context) (int64, error) {

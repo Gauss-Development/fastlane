@@ -33,13 +33,13 @@ const createRFQ = `-- name: CreateRFQ :one
 INSERT INTO rfqs (
     id, buyer_id, buyer_email, buyer_company,
     query_text, parsed_specs, matched_product_ids,
-    status, qty, target_date, shipping_address, notes
+    status, qty, target_date, shipping_address, notes, project_id
 ) VALUES (
     $1, $2, $3, $4,
     $5, $6, $7,
-    $8, $9, $10, $11, $12
+    $8, $9, $10, $11, $12, $13
 )
-RETURNING id, buyer_id, query_text, parsed_specs, matched_product_ids, status, qty, target_date, shipping_address, notes, created_at, buyer_email, buyer_company
+RETURNING id, buyer_id, query_text, parsed_specs, matched_product_ids, status, qty, target_date, shipping_address, notes, created_at, buyer_email, buyer_company, project_id
 `
 
 type CreateRFQParams struct {
@@ -55,6 +55,7 @@ type CreateRFQParams struct {
 	TargetDate        pgtype.Date   `db:"target_date" json:"target_date"`
 	ShippingAddress   *string       `db:"shipping_address" json:"shipping_address"`
 	Notes             *string       `db:"notes" json:"notes"`
+	ProjectID         *string       `db:"project_id" json:"project_id"`
 }
 
 func (q *Queries) CreateRFQ(ctx context.Context, arg CreateRFQParams) (Rfq, error) {
@@ -71,6 +72,7 @@ func (q *Queries) CreateRFQ(ctx context.Context, arg CreateRFQParams) (Rfq, erro
 		arg.TargetDate,
 		arg.ShippingAddress,
 		arg.Notes,
+		arg.ProjectID,
 	)
 	var i Rfq
 	err := row.Scan(
@@ -87,12 +89,13 @@ func (q *Queries) CreateRFQ(ctx context.Context, arg CreateRFQParams) (Rfq, erro
 		&i.CreatedAt,
 		&i.BuyerEmail,
 		&i.BuyerCompany,
+		&i.ProjectID,
 	)
 	return i, err
 }
 
 const getRFQByID = `-- name: GetRFQByID :one
-SELECT id, buyer_id, query_text, parsed_specs, matched_product_ids, status, qty, target_date, shipping_address, notes, created_at, buyer_email, buyer_company FROM rfqs WHERE id = $1
+SELECT id, buyer_id, query_text, parsed_specs, matched_product_ids, status, qty, target_date, shipping_address, notes, created_at, buyer_email, buyer_company, project_id FROM rfqs WHERE id = $1
 `
 
 func (q *Queries) GetRFQByID(ctx context.Context, id string) (Rfq, error) {
@@ -112,6 +115,7 @@ func (q *Queries) GetRFQByID(ctx context.Context, id string) (Rfq, error) {
 		&i.CreatedAt,
 		&i.BuyerEmail,
 		&i.BuyerCompany,
+		&i.ProjectID,
 	)
 	return i, err
 }
@@ -172,7 +176,7 @@ func (q *Queries) ListProductsByIDs(ctx context.Context, dollar_1 []pgtype.UUID)
 }
 
 const listRFQsByBuyer = `-- name: ListRFQsByBuyer :many
-SELECT id, buyer_id, query_text, parsed_specs, matched_product_ids, status, qty, target_date, shipping_address, notes, created_at, buyer_email, buyer_company FROM rfqs
+SELECT id, buyer_id, query_text, parsed_specs, matched_product_ids, status, qty, target_date, shipping_address, notes, created_at, buyer_email, buyer_company, project_id FROM rfqs
 WHERE buyer_id = $1
   AND ($4::text IS NULL OR status = $4::text)
 ORDER BY created_at DESC
@@ -214,6 +218,7 @@ func (q *Queries) ListRFQsByBuyer(ctx context.Context, arg ListRFQsByBuyerParams
 			&i.CreatedAt,
 			&i.BuyerEmail,
 			&i.BuyerCompany,
+			&i.ProjectID,
 		); err != nil {
 			return nil, err
 		}
@@ -280,7 +285,7 @@ func (q *Queries) NextRFQSeq(ctx context.Context) (int64, error) {
 
 const updateRFQStatus = `-- name: UpdateRFQStatus :one
 UPDATE rfqs SET status = $2 WHERE id = $1
-RETURNING id, buyer_id, query_text, parsed_specs, matched_product_ids, status, qty, target_date, shipping_address, notes, created_at, buyer_email, buyer_company
+RETURNING id, buyer_id, query_text, parsed_specs, matched_product_ids, status, qty, target_date, shipping_address, notes, created_at, buyer_email, buyer_company, project_id
 `
 
 type UpdateRFQStatusParams struct {
@@ -305,6 +310,7 @@ func (q *Queries) UpdateRFQStatus(ctx context.Context, arg UpdateRFQStatusParams
 		&i.CreatedAt,
 		&i.BuyerEmail,
 		&i.BuyerCompany,
+		&i.ProjectID,
 	)
 	return i, err
 }

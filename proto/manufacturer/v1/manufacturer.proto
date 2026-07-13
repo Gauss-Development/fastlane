@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+package manufacturer.v1;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/nikitashilov/microblog_grpc/proto/manufacturer/v1;manufacturerv1";
+
+// catalog-service holds Chinese PCB/PCBA manufacturer profiles + their
+// capabilities. A Manufacturer is owned by a user with role=manufacturer
+// (one profile per user). Buyers/startups browse and filter these; a later
+// capability-match search queries the same rows. Verification is admin-gated.
+
+message Manufacturer {
+  string id                = 1;   // MFR-YYYYMMDD-NNNN
+  string user_id           = 2;   // soft ref to users(id), role=manufacturer; unique
+  string name              = 3;
+  string name_zh           = 4;
+  string city              = 5;
+  string country           = 6;   // default "CN"
+  string cluster           = 7;   // Shenzhen | Dongguan | Huizhou | ...
+  string description       = 8;
+  string website           = 9;
+
+  // ---- PCB/PCBA capabilities (filterable) ----
+  repeated string service_types    = 10;  // pcb_fab | pcba | cable_assembly | enclosure | box_build
+  repeated string assembly_types   = 11;  // smt | tht | mixed
+  int32  min_layers                = 12;  // PCB layer count supported
+  int32  max_layers                = 13;
+  repeated string materials        = 14;  // fr4 | aluminum | rogers | flex | rigid_flex
+  repeated string surface_finishes = 15;  // hasl | enig | immersion_silver | osp
+  int32  min_order_qty             = 16;  // MOQ (boards/units)
+  int32  max_order_qty             = 17;  // 0 = unbounded
+  int32  lead_time_days            = 18;  // typical prototype lead time
+  int32  monthly_capacity          = 19;  // boards/month
+  string smallest_package          = 20;  // e.g. "0201" or "BGA 0.4mm pitch"
+  repeated string certifications   = 21;  // ISO9001 | IPC-A-610 | UL | RoHS | ISO13485
+
+  // ---- trust / stats ----
+  bool   verified          = 22;
+  google.protobuf.Timestamp verified_at = 23;
+  double rating            = 24;  // 0..5
+  int32  order_count       = 25;
+  double on_time_rate      = 26;  // 0..100
+  string contact_email     = 27;
+  string contact_wechat    = 28;
+  string status            = 29;  // active | pending | archived
+
+  google.protobuf.Timestamp created_at = 30;
+  google.protobuf.Timestamp updated_at = 31;
+}
+
+message CreateManufacturerRequest {
+  Manufacturer manufacturer = 1;   // manufacturer.user_id is the actor (gateway-set); server assigns id/status/timestamps
+}
+
+message GetManufacturerRequest {
+  string id = 1;
+}
+
+message GetManufacturerByUserRequest {
+  string user_id = 1;   // a manufacturer fetching their own profile
+}
+
+message UpdateManufacturerRequest {
+  Manufacturer manufacturer = 1;   // by id
+  string actor_id = 2;             // must equal the profile's user_id
+}
+
+// Filters for browse + (later) capability matching. Empty fields = no filter.
+message ListManufacturersRequest {
+  int32  limit          = 1;
+  int32  offset         = 2;
+  string cluster        = 3;
+  string service_type   = 4;   // matches if present in service_types
+  string assembly_type  = 5;   // matches if present in assembly_types
+  string material       = 6;   // matches if present in materials
+  bool   verified_only  = 7;
+  int32  min_layers_gte = 8;   // manufacturer.max_layers >= this
+}
+
+message ListManufacturersResponse {
+  repeated Manufacturer manufacturers = 1;
+  int32 total = 2;
+}
+
+message VerifyManufacturerRequest {
+  string id       = 1;
+  bool   verified = 2;
+  string actor_id = 3;   // admin (gateway enforces role=admin)
+}
+
+service ManufacturerService {
+  rpc CreateManufacturer(CreateManufacturerRequest)         returns (Manufacturer);
+  rpc GetManufacturer(GetManufacturerRequest)               returns (Manufacturer);
+  rpc GetManufacturerByUser(GetManufacturerByUserRequest)   returns (Manufacturer);
+  rpc UpdateManufacturer(UpdateManufacturerRequest)         returns (Manufacturer);
+  rpc ListManufacturers(ListManufacturersRequest)           returns (ListManufacturersResponse);
+  rpc VerifyManufacturer(VerifyManufacturerRequest)         returns (Manufacturer);
+  rpc HealthCheck(google.protobuf.Empty)                    returns (google.protobuf.Empty);
+}

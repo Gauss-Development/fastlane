@@ -10,6 +10,8 @@ type CreateUserRequest struct {
 	Name     string `json:"name" binding:"required,min=1,max=100"`
 	Picture  string `json:"picture,omitempty"`
 	Password string `json:"password,omitempty"` // optional; for email/password signup only
+	Role     string `json:"role,omitempty"`     // startup | manufacturer | admin; defaults to startup
+	Company  string `json:"company,omitempty"`
 }
 
 type UpdateUserRequest struct {
@@ -28,6 +30,8 @@ type UserResponse struct {
 	Bio       string    `json:"bio,omitempty"`
 	Location  string    `json:"location,omitempty"`
 	Website   string    `json:"website,omitempty"`
+	Role      string    `json:"role"`
+	Company   string    `json:"company,omitempty"`
 	IsActive  bool      `json:"is_active"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -41,6 +45,8 @@ type UserProfileResponse struct {
 	Bio      string `json:"bio,omitempty"`
 	Location string `json:"location,omitempty"`
 	Website  string `json:"website,omitempty"`
+	Role     string `json:"role"`
+	Company  string `json:"company,omitempty"`
 }
 
 type ListUsersRequest struct {

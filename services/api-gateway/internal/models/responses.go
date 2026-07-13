@@ -37,6 +37,7 @@ type TokenValidationResponse struct {
 	Valid  bool   `json:"valid"`
 	UserID string `json:"user_id,omitempty"`
 	Email  string `json:"email,omitempty"`
+	Role   string `json:"role,omitempty"`
 }
 
 // Notification models (for future implementation)

@@ -1,6 +1,6 @@
 # Monitoring (Prometheus + Grafana)
 
-The stack includes **Prometheus** for metrics collection and **Grafana** for dashboards. Both are attached to `internal_net` and are started with **`make infra-up`** (alongside Redis, Postgres, RabbitMQ, OpenSearch, Kafka).
+The stack includes **Prometheus** for metrics collection and **Grafana** for dashboards. Both are attached to `internal_net` and are started with **`make infra-up`** (alongside Redis, Postgres, RabbitMQ).
 
 ## URLs (defaults)
 

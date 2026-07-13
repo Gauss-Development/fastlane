@@ -40,9 +40,3 @@ type CreateNotificationRequest struct {
 	Message string                 `json:"message" binding:"required,min=1,max=1000"`
 	Data    map[string]interface{} `json:"data,omitempty"`
 }
-
-type NotificationStatsResponse struct {
-	TotalNotifications  int64            `json:"total_notifications"`
-	UnreadNotifications int64            `json:"unread_notifications"`
-	NotificationsByType map[string]int64 `json:"notifications_by_type"`
-}

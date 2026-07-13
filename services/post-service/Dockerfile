@@ -12,6 +12,8 @@ COPY services/post-service/go.mod services/post-service/go.sum /workspace/servic
 
 # Download dependencies
 WORKDIR /workspace/services/post-service
+COPY certs/ /tmp/certs/
+RUN find /tmp/certs -name '*.crt' -exec cat {} >> /etc/ssl/certs/ca-certificates.crt \;
 RUN go mod download
 
 # Copy source code

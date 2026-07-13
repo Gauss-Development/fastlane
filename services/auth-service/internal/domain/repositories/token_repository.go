@@ -20,7 +20,6 @@ type TokenRepository interface {
 	StoreAccessToken(ctx context.Context, token string, data *entities.StoredToken, ttl time.Duration) error
 	StoreRefreshToken(ctx context.Context, token string, data *entities.StoredToken, ttl time.Duration) error
 	GetTokenData(ctx context.Context, token string) (*entities.StoredToken, error)
-	DeleteToken(ctx context.Context, token string) error
 	DeleteUserTokens(ctx context.Context, userID string) error
 
 	// Token rotation (security best practice)

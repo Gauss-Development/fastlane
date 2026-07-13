@@ -79,6 +79,14 @@ func main() {
 		appLogger.Fatal("failed to start consuming messages " + err.Error())
 	}
 
+	// On connection/channel close, exit fatally so the container restart policy
+	// respawns the process and re-runs Connect + StartConsuming from scratch.
+	go func() {
+		if closeErr := <-rabbitMQClient.NotifyClose(); closeErr != nil {
+			appLogger.Fatal("rabbit connection closed, exiting for restart: " + closeErr.Error())
+		}
+	}()
+
 	if cfg.Environment == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -88,7 +96,7 @@ func main() {
 	router.Use(metrics.GinMiddleware("notification-service"))
 	router.GET("/metrics", gin.WrapH(metrics.Handler()))
 
-	routes.SetupNotificationRoutes(router, notificationService, appLogger)
+	routes.SetupNotificationRoutes(router, notificationService, rabbitMQClient, appLogger)
 
 	server := &http.Server{
 		Addr:              ":" + cfg.Port,

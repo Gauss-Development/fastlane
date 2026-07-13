@@ -103,6 +103,7 @@ type Rfq struct {
 	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	BuyerEmail        *string            `db:"buyer_email" json:"buyer_email"`
 	BuyerCompany      *string            `db:"buyer_company" json:"buyer_company"`
+	ProjectID         *string            `db:"project_id" json:"project_id"`
 }
 
 type Supplier struct {

@@ -5,6 +5,7 @@ export type QuoteStatus = "pending" | "submitted" | "accepted" | "rejected";
 
 export interface RFQ {
   id: string;
+  project_id?: string;
   buyer_id?: string;
   buyer_email?: string;
   buyer_company: string;

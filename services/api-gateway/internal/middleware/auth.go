@@ -48,6 +48,7 @@ func AuthMiddleware(authClient *clients.AuthClient) gin.HandlerFunc {
 		// Set user information in context
 		c.Set("userID", resp.GetUserId())
 		c.Set("userEmail", resp.GetEmail())
+		c.Set("userRole", resp.GetRole())
 		c.Set("token", tokenString)
 		c.Next()
 	}
@@ -72,6 +73,7 @@ func OptionalAuthMiddleware(authClient *clients.AuthClient) gin.HandlerFunc {
 		if err == nil && resp.GetValid() {
 			c.Set("userID", resp.GetUserId())
 			c.Set("userEmail", resp.GetEmail())
+			c.Set("userRole", resp.GetRole())
 			c.Set("token", tokenString)
 		}
 

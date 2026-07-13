@@ -14,9 +14,10 @@ func SetupRoutes(
 	router *gin.Engine,
 	authHandler *handlers.AuthHandler,
 	userHandler *handlers.UserHandler,
-	postHandler *handlers.PostHandler,
 	searchHandler *handlers.SearchHandler,
 	rfqHandler *handlers.RFQHandler,
+	projectHandler *handlers.ProjectHandler,
+	manufacturerHandler *handlers.ManufacturerHandler,
 	healthHandler *handlers.HealthHandler,
 	authClient *clients.AuthClient,
 	redisClient *clients.RedisClient,
@@ -68,16 +69,6 @@ func SetupRoutes(
 				publicUsers.GET("/stats", userHandler.GetStats)
 				publicUsers.GET("/:id/profile", userHandler.GetUserProfile)
 			}
-
-			// Public post routes
-			publicPosts := publicGroup.Group("/posts")
-			{
-				publicPosts.GET("", postHandler.ListPosts)
-				publicPosts.GET("/search", postHandler.SearchPosts)
-				// publicPosts.GET("/stats", postHandler.GetPostStats)
-				publicPosts.GET("/slug/:slug", postHandler.GetPostBySlug)
-				publicPosts.GET("/user/:userId", postHandler.GetUserPosts)
-			}
 		}
 
 		// Supplier magic-link RFQ surface: public, gated by the signed
@@ -104,6 +95,40 @@ func SetupRoutes(
 				rfqs.GET("/:id/quotes", rfqHandler.ListQuotes)
 			}
 
+			// Design flow: startup projects, design files, and per-manufacturer NDAs.
+			// gateway maps userID -> owner_id / actor_id / manufacturer_id.
+			projects := protectedGroup.Group("/projects")
+			{
+				projects.POST("", middleware.RequireRole("startup"), projectHandler.CreateProject)
+				projects.GET("", projectHandler.ListProjects)
+				projects.GET("/:id", projectHandler.GetProject)
+				projects.POST("/:id/files/upload-url", projectHandler.RequestUploadURL)
+				projects.GET("/:id/files", projectHandler.ListFiles)
+				projects.POST("/:id/invite", middleware.RequireRole("startup"), projectHandler.InviteManufacturer)
+				projects.POST("/:id/nda/accept", middleware.RequireRole("manufacturer"), projectHandler.AcceptNDA)
+				projects.GET("/:id/nda", projectHandler.GetNDAStatus)
+			}
+
+			files := protectedGroup.Group("/files")
+			{
+				files.POST("/:fileId/confirm", projectHandler.ConfirmUpload)
+				files.GET("/:fileId/download-url", projectHandler.RequestDownloadURL)
+			}
+
+			// Catalog flow: Chinese PCB/PCBA manufacturer profiles + capabilities.
+			// gateway maps userID -> manufacturer.user_id / actor_id.
+			manuf := protectedGroup.Group("/manufacturers")
+			{
+				manuf.POST("", middleware.RequireRole("manufacturer"), manufacturerHandler.CreateManufacturer)
+				manuf.GET("", manufacturerHandler.ListManufacturers)
+				manuf.GET("/:id", manufacturerHandler.GetManufacturer)
+				manuf.PUT("/:id", middleware.RequireRole("manufacturer"), manufacturerHandler.UpdateManufacturer)
+				manuf.POST("/:id/verify", middleware.RequireRole("admin"), manufacturerHandler.VerifyManufacturer)
+			}
+			// Separate top-level path (not under /manufacturers) to avoid gin
+			// static-vs-:id sibling conflicts.
+			protectedGroup.GET("/manufacturer-profile", manufacturerHandler.GetMyManufacturer)
+
 			// User routes
 			users := protectedGroup.Group("/users")
 			{
@@ -112,19 +137,6 @@ func SetupRoutes(
 				users.GET("/:id", userHandler.GetUser)
 				users.PUT("/:id", userHandler.UpdateUser)
 				users.DELETE("/:id", userHandler.DeleteUser)
-				users.POST("/:id/follow", userHandler.Follow)
-				users.DELETE("/:id/follow", userHandler.Unfollow)
-				users.GET("/:id/followers", userHandler.GetFollowers)
-				users.GET("/:id/following", userHandler.GetFollowing)
-			}
-
-			// Post routes
-			posts := protectedGroup.Group("/posts")
-			{
-				posts.POST("", postHandler.CreatePost)
-				posts.GET("/:id", postHandler.GetPost)
-				posts.PUT("/:id", postHandler.UpdatePost)
-				posts.DELETE("/:id", postHandler.DeletePost)
 			}
 		}
 	}

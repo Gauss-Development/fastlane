@@ -11,12 +11,12 @@ import (
 type Manager struct {
 	secret     []byte
 	algorithms []string
-	//issuer     string
 }
 
 type Claims struct {
 	UserID string `json:"user_id"`
 	Email  string `json:"email"`
+	Role   string `json:"role"`
 	Type   string `json:"type"`
 	jwt.RegisteredClaims
 }
@@ -25,7 +25,6 @@ func NewManager(secret, issuer string) *Manager {
 	return &Manager{
 		secret:     []byte(secret),
 		algorithms: []string{"HS256"}, // Explicitly allow only secure algorithms
-		//issuer:     issuer,
 	}
 }
 
@@ -34,6 +33,7 @@ func (m *Manager) GenerateToken(tokenClaims *entities.TokenClaims, ttl time.Dura
 	claims := &Claims{
 		UserID: tokenClaims.UserID,
 		Email:  tokenClaims.Email,
+		Role:   tokenClaims.Role,
 		Type:   tokenClaims.Type,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(now),
@@ -72,14 +72,10 @@ func (m *Manager) ValidateToken(tokenString string) (*entities.TokenClaims, erro
 		return nil, fmt.Errorf("invalid token claims")
 	}
 
-	// Validate issuer
-	//if claims.Issuer != m.issuer {
-	//	return nil, fmt.Errorf("invalid token issuer")
-	//}
-
 	return &entities.TokenClaims{
 		UserID: claims.UserID,
 		Email:  claims.Email,
+		Role:   claims.Role,
 		Type:   claims.Type,
 	}, nil
 }

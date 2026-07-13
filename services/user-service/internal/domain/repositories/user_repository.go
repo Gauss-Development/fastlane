@@ -13,6 +13,5 @@ type UserRepository interface {
 	Delete(ctx context.Context, id string) error
 	List(ctx context.Context, limit, offset int) ([]*entities.User, error)
 	Search(ctx context.Context, query string, limit, offset int) ([]*entities.User, error)
-	Exists(ctx context.Context, id string) (bool, error)
 	GetActiveUsersCount(ctx context.Context) (int64, error)
 }

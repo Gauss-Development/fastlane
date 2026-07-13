@@ -26,11 +26,14 @@ export interface APIFailure {
 
 export type APIEnvelope<T> = APISuccess<T> | APIFailure;
 
+export type UserRole = "startup" | "manufacturer" | "admin";
+
 export interface UserInfo {
   id: string;
   email: string;
   name?: string;
   picture?: string;
+  role?: UserRole;
 }
 
 export interface SessionPayload {

@@ -22,7 +22,6 @@ import (
 	"user-service/internal/config"
 	"user-service/internal/infrastructure/postgres"
 	grpcinterface "user-service/internal/interfaces/grpc"
-	"user-service/internal/interfaces/http/routes"
 	"user-service/pkg/logger"
 	"user-service/pkg/metrics"
 
@@ -61,10 +60,9 @@ func main() {
 
 	// Initialize repositories
 	userRepo := postgres.NewUserRepository(db)
-	followRepo := postgres.NewFollowRepository(db)
 
 	// Initialize services
-	userService := services.NewUserService(userRepo, followRepo, appLogger)
+	userService := services.NewUserService(userRepo, appLogger)
 
 	// Setup gRPC server with options
 	grpcOptions := []grpc.ServerOption{
@@ -110,14 +108,14 @@ func main() {
 		}
 	}()
 
-	// Setup HTTP server
+	// Minimal HTTP server: only /health (docker healthcheck) and /metrics.
 	router := gin.New()
 	router.Use(gin.Recovery())
 	router.Use(metrics.GinMiddleware("user-service"))
 	router.GET("/metrics", gin.WrapH(metrics.Handler()))
-
-	// Setup routes
-	routes.SetupUserRoutes(router, userService, appLogger)
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
 
 	// Create HTTP server
 	server := &http.Server{

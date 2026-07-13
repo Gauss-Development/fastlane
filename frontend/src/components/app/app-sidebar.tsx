@@ -19,18 +19,34 @@ type NavItem = {
   code: string;
 };
 
-const NAV_ITEMS: NavItem[] = [
-  { href: "/dashboard", label: "Search", code: "01" },
-  { href: "/rfqs", label: "RFQs", code: "02" },
-  { href: "/orders", label: "Orders", code: "03" },
-  { href: "/suppliers", label: "Suppliers", code: "04" },
-  { href: "/app/profile", label: "Settings", code: "05" },
-];
+function navItemsForRole(role: string | undefined): NavItem[] {
+  const labels: [string, string][] =
+    role === "manufacturer"
+      ? [
+          ["/manufacturer-profile", "My Profile"],
+          ["/rfqs", "RFQs"],
+          ["/orders", "Orders"],
+        ]
+      : [
+          ["/dashboard", "Search"],
+          ["/projects", "Projects"],
+          ["/manufacturers", "Manufacturers"],
+          ["/rfqs", "RFQs"],
+          ["/orders", "Orders"],
+          ["/app/profile", "Settings"],
+        ];
+  return labels.map(([href, label], i) => ({
+    href,
+    label,
+    code: String(i + 1).padStart(2, "0"),
+  }));
+}
 
 export function AppSidebar() {
   const pathname = usePathname();
   const user = useAuthStore((state) => state.user);
   const [collapsed, setCollapsed] = useState(false);
+  const navItems = navItemsForRole(user?.role);
 
   async function handleLogout() {
     await logoutSession();
@@ -68,7 +84,7 @@ export function AppSidebar() {
       </div>
 
       <nav className="flex flex-1 flex-col py-2">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const active =
             pathname === item.href ||
             pathname === item.href + "/" ||

@@ -14,6 +14,8 @@ message CreateUserRequest {
   string name = 3;
   string picture = 4;
   string password = 5;  // optional; for email/password signup only
+  string role = 6;      // startup | manufacturer | admin; empty defaults to startup
+  string company = 7;
 }
 
 message UpdateUserRequest {
@@ -65,6 +67,8 @@ message User {
   bool is_active = 8;
   google.protobuf.Timestamp created_at = 9;
   google.protobuf.Timestamp updated_at = 10;
+  string role = 11;     // startup | manufacturer | admin
+  string company = 12;
 }
 
 message UserProfile {
@@ -75,6 +79,8 @@ message UserProfile {
   string bio = 5;
   string location = 6;
   string website = 7;
+  string role = 8;      // startup | manufacturer | admin
+  string company = 9;
 }
 
 message ListUsersResponse {
@@ -86,42 +92,6 @@ message ListUsersResponse {
 
 message UserStatsResponse {
   int64 total_active_users = 1;
-}
-
-message FollowRequest {
-  string follower_id = 1;
-  string followee_id = 2;
-}
-
-message UnfollowRequest {
-  string follower_id = 1;
-  string followee_id = 2;
-}
-
-message GetFollowersRequest {
-  string user_id = 1;
-  int32 limit = 2;
-  string cursor = 3;
-}
-
-message GetFollowingRequest {
-  string user_id = 1;
-  int32 limit = 2;
-  string cursor = 3;
-}
-
-message ListFollowResponse {
-  repeated UserProfile users = 1;
-  string next_cursor = 2;
-}
-
-message AreFollowedRequest {
-  string follower_id = 1;
-  repeated string followee_ids = 2;
-}
-
-message AreFollowedResponse {
-  repeated string followed_ids = 1;
 }
 
 message ValidateCredentialsRequest {
@@ -147,10 +117,5 @@ service UserService {
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
   rpc SearchUsers(SearchUsersRequest) returns (ListUsersResponse);
   rpc GetStats(google.protobuf.Empty) returns (UserStatsResponse);
-  rpc Follow(FollowRequest) returns (google.protobuf.Empty);
-  rpc Unfollow(UnfollowRequest) returns (google.protobuf.Empty);
-  rpc GetFollowers(GetFollowersRequest) returns (ListFollowResponse);
-  rpc GetFollowing(GetFollowingRequest) returns (ListFollowResponse);
-  rpc AreFollowed(AreFollowedRequest) returns (AreFollowedResponse);
   rpc HealthCheck(google.protobuf.Empty) returns (google.protobuf.Empty);
 }

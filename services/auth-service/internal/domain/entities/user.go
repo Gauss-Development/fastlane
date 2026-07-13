@@ -7,6 +7,7 @@ type GoogleUserInfo struct {
 	Email         string `json:"email"`
 	Name          string `json:"name"`
 	Picture       string `json:"picture"`
+	Role          string `json:"role"`
 	VerifiedEmail bool   `json:"verified_email"`
 	GivenName     string `json:"given_name"`
 	FamilyName    string `json:"family_name"`

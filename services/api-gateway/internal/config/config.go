@@ -50,6 +50,8 @@ type ServicesConfig struct {
 	UserGRPCAddr    string
 	PostGRPCAddr    string
 	SearchGRPCAddr  string
+	DesignGRPCAddr  string
+	CatalogGRPCAddr string
 	NotificationURL string
 }
 
@@ -97,6 +99,8 @@ func Load() (*Config, error) {
 			UserGRPCAddr:    getEnv("USER_SERVICE_GRPC_ADDR", "localhost:50052"),
 			PostGRPCAddr:    getEnv("POST_SERVICE_GRPC_ADDR", "localhost:50053"),
 			SearchGRPCAddr:  getEnv("SEARCH_SERVICE_GRPC_ADDR", "localhost:50054"),
+			DesignGRPCAddr:  getEnv("DESIGN_SERVICE_GRPC_ADDR", "localhost:50056"),
+			CatalogGRPCAddr: getEnv("CATALOG_SERVICE_GRPC_ADDR", "localhost:50057"),
 			NotificationURL: getEnv("NOTIFICATION_SERVICE_URL", "http://localhost:8084"),
 		},
 		GRPCTLS: GRPCTLSConfig{
@@ -174,6 +178,12 @@ func (c *Config) validate() error {
 	}
 	if c.Services.SearchGRPCAddr == "" {
 		return fmt.Errorf("SEARCH_SERVICE_GRPC_ADDR is required")
+	}
+	if c.Services.DesignGRPCAddr == "" {
+		return fmt.Errorf("DESIGN_SERVICE_GRPC_ADDR is required")
+	}
+	if c.Services.CatalogGRPCAddr == "" {
+		return fmt.Errorf("CATALOG_SERVICE_GRPC_ADDR is required")
 	}
 	if c.Environment == "production" && strings.TrimSpace(c.Redis.Password) == "" {
 		return fmt.Errorf("REDIS_PASSWORD is required in production")

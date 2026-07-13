@@ -33,10 +33,15 @@ func RateLimit(redisClient *clients.RedisClient, cfg config.RateLimitConfig) gin
 
 	return func(c *gin.Context) {
 		clientIP := c.ClientIP()
-		userAgent := c.GetHeader("User-Agent")
 
-		// Create a unique key for this client
-		key := fmt.Sprintf("rate_limit:%s:%s", clientIP, userAgent)
+		// Key the bucket on identity, not User-Agent (which is trivially rotated).
+		// Prefer an authenticated user id when present, else fall back to client IP.
+		var key string
+		if uid := c.GetString("userID"); uid != "" {
+			key = fmt.Sprintf("rate_limit:user:%s", uid)
+		} else {
+			key = fmt.Sprintf("rate_limit:ip:%s", clientIP)
+		}
 
 		// Check rate limit using Redis
 		allowed, err := checkRateLimit(redisClient, key, cfg, c)

@@ -7,6 +7,8 @@ COPY proto /workspace/proto
 COPY services/search-service/go.mod services/search-service/go.sum /workspace/services/search-service/
 
 WORKDIR /workspace/services/search-service
+COPY certs/ /tmp/certs/
+RUN find /tmp/certs -name '*.crt' -exec cat {} >> /etc/ssl/certs/ca-certificates.crt \;
 RUN go mod download
 
 COPY services/search-service /workspace/services/search-service

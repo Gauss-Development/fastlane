@@ -1,11 +1,9 @@
 package rabbitmq
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/streadway/amqp"
 	"notification-service/internal/config"
-	"notification-service/internal/domain/entities"
 	"notification-service/pkg/logger"
 	"time"
 )
@@ -144,10 +142,20 @@ func (c *Client) StartConsuming(handler MessageHandler) error {
 		for d := range msgs {
 			c.processMessages(d, handler)
 		}
+		// msgs is closed when the AMQP connection/channel drops; without this
+		// the consumer goroutine would exit silently and emails would stop.
+		c.logger.Warn("rabbit consumer stopped: delivery channel closed")
 	}()
 
 	c.logger.Info("Start consuming messages from rabbit")
 	return nil
+}
+
+// NotifyClose returns a channel that fires when the underlying AMQP channel
+// closes (e.g. broker restart / connection drop). Callers should treat this as
+// fatal and let the orchestrator restart the process to reconnect from scratch.
+func (c *Client) NotifyClose() chan *amqp.Error {
+	return c.channel.NotifyClose(make(chan *amqp.Error))
 }
 
 func (c *Client) processMessages(delivery amqp.Delivery, handler MessageHandler) {
@@ -180,62 +188,6 @@ func (c *Client) processMessages(delivery amqp.Delivery, handler MessageHandler)
 
 }
 
-func (c *Client) PublishEvent(routingKey string, event interface{}) error {
-	body, err := json.Marshal(event)
-	if err != nil {
-		return fmt.Errorf("failed to marshal event: %w", err)
-	}
-
-	err = c.channel.Publish(
-		c.config.ExchangeName,
-		routingKey,
-		false,
-		false,
-		amqp.Publishing{
-			ContentType:  "application/json",
-			Body:         body,
-			DeliveryMode: amqp.Persistent,
-			Timestamp:    time.Now(),
-		},
-	)
-
-	if err != nil {
-		return fmt.Errorf("failed to publish msg: %w", err)
-	}
-
-	return nil
-}
-
-func (c *Client) HandlePostCreated(body []byte) error {
-	var event entities.PostCreatedEvent
-	if err := json.Unmarshal(body, &event); err != nil {
-		return fmt.Errorf("failed to unmarshal post created event: %w", err)
-	}
-	c.logger.Info(fmt.Sprintf("processing post creatng event: %s, from user: %s", event.PostID, event.UserID))
-
-	return nil
-}
-
-func (c *Client) HandlePostUpdated(body []byte) error {
-	var event entities.PostUpdatedEvent
-	if err := json.Unmarshal(body, &event); err != nil {
-		return fmt.Errorf("failed to unmarshal post updated event: %w", err)
-	}
-	c.logger.Info(fmt.Sprintf("Processing post updated event: %s, from user: %v", event.PostID, event.UserID))
-
-	return nil
-}
-
-func (c *Client) HandlePostDeleted(body []byte) error {
-	var event entities.PostDeletedEvent
-	if err := json.Unmarshal(body, &event); err != nil {
-		return fmt.Errorf("failed to unmarshal post deleted event: %w", err)
-	}
-
-	c.logger.Info(fmt.Sprintf("processing post deleted event: %s from user: %s", event.PostID, event.UserID))
-	return nil
-}
-
 func (c *Client) Close() error {
 	if c.channel != nil {
 		if err := c.channel.Close(); err != nil {
@@ -254,23 +206,4 @@ func (c *Client) Close() error {
 
 func (c *Client) IsConnected() bool {
 	return c.connection != nil && !c.connection.IsClosed()
-}
-
-func (c *Client) Reconnect() error {
-	c.logger.Info("attempt to reconnect to rabbit")
-
-	if c.IsConnected() {
-		c.Close()
-	}
-
-	for i := 0; i < c.config.MaxRetries; i++ {
-		if err := c.Connect(); err != nil {
-			c.logger.Warn(fmt.Sprintf("reconnection attempt %d failed: %v", i+1, err))
-			time.Sleep(time.Duration(c.config.ReconnectDelay) * time.Second)
-			continue
-		}
-		c.logger.Info("Ok, reconnected to rabbit")
-		return nil
-	}
-	return fmt.Errorf("failed to reconnect after %d attempts", c.config.MaxRetries)
 }

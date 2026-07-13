@@ -3,13 +3,14 @@ package routes
 import (
 	"github.com/gin-gonic/gin"
 	"notification-service/internal/application/services"
+	"notification-service/internal/infrastructure/rabbitmq"
 	"notification-service/internal/interface/http/handler"
 	"notification-service/internal/interface/http/middleware"
 	"notification-service/pkg/logger"
 )
 
-func SetupNotificationRoutes(router *gin.Engine, notificationService *services.NotificationService, logger *logger.Logger) {
-	notificationHandler := handler.NewNotificationHandler(notificationService, logger)
+func SetupNotificationRoutes(router *gin.Engine, notificationService *services.NotificationService, rabbitMQClient *rabbitmq.Client, logger *logger.Logger) {
+	notificationHandler := handler.NewNotificationHandler(notificationService, rabbitMQClient, logger)
 
 	// Global Middleware
 	router.Use(middleware.ErrorHandler(logger))

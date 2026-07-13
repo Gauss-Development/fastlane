@@ -35,6 +35,7 @@ type RFQ struct {
 	TargetDate        string          `json:"target_date"` // ISO-8601 date, empty when unset
 	ShippingAddress   string          `json:"shipping_address"`
 	Notes             string          `json:"notes"`
+	ProjectID         string          `json:"project_id"`
 	CreatedAt         time.Time       `json:"created_at"`
 }
 

@@ -5,11 +5,11 @@ SELECT nextval('rfq_id_seq')::bigint;
 INSERT INTO rfqs (
     id, buyer_id, buyer_email, buyer_company,
     query_text, parsed_specs, matched_product_ids,
-    status, qty, target_date, shipping_address, notes
+    status, qty, target_date, shipping_address, notes, project_id
 ) VALUES (
     $1, $2, $3, $4,
     $5, $6, $7,
-    $8, $9, $10, $11, $12
+    $8, $9, $10, $11, $12, $13
 )
 RETURNING *;
 

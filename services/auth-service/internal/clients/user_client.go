@@ -50,7 +50,7 @@ func NewUserClient(addr string, tlsCfg config.GRPCTLSConfig) (*UserClient, error
 }
 
 // CreateUser creates a user in user-service (id optional for email/password signup).
-func (c *UserClient) CreateUser(ctx context.Context, id, email, name, picture, password string) (*userv1.User, error) {
+func (c *UserClient) CreateUser(ctx context.Context, id, email, name, picture, password, role, company string) (*userv1.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, defaultUserTimeout)
 	defer cancel()
 
@@ -60,6 +60,8 @@ func (c *UserClient) CreateUser(ctx context.Context, id, email, name, picture, p
 		Name:     name,
 		Picture:  picture,
 		Password: password,
+		Role:     role,
+		Company:  company,
 	}
 
 	resp, err := c.client.CreateUser(ctx, req)

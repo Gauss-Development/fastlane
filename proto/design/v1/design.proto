@@ -1,0 +1,161 @@
+syntax = "proto3";
+
+package design.v1;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/nikitashilov/microblog_grpc/proto/design/v1;designv1";
+
+// design-service holds the custom part a startup wants manufactured (Project),
+// its uploaded design files (DesignFile), and the per-manufacturer NDA that
+// gates access to those files. Files never transit the service: it stores
+// metadata and issues short-TTL presigned URLs to object storage. Authorization
+// (actor_id == owner, or a manufacturer with an accepted NDA) is enforced here,
+// not only at the gateway.
+
+// A custom electronics part a startup is sourcing (PCB / PCBA / assembly).
+message Project {
+  string id                            = 1;   // PRJ-YYYYMMDD-NNNN
+  string owner_id                      = 2;   // soft ref to users(id), role=startup
+  string title                         = 3;
+  string description                   = 4;
+  string category                      = 5;   // pcb | pcba | cable_assembly | enclosure | other
+  string status                        = 6;   // draft | active | archived
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+  string owner_email                   = 9;   // denormalized for emails/UI (mirror RFQ)
+  string owner_company                 = 10;
+}
+
+// A file attached to a project. Committed only after ConfirmUpload; a row stays
+// 'pending' until the client confirms the object-storage PUT succeeded.
+message DesignFile {
+  string id                            = 1;   // FILE-YYYYMMDD-NNNN
+  string project_id                    = 2;
+  string kind                          = 3;   // gerber | bom | assembly_drawing | pick_place | datasheet | nda | other
+  string filename                      = 4;
+  int32  version                       = 5;   // increments per (project_id, kind)
+  string content_sha256                = 6;   // client-reported at confirm; integrity check
+  string object_key                    = 7;   // storage key; never exposed to clients directly
+  int64  size_bytes                    = 8;
+  string content_type                  = 9;   // MIME
+  string uploaded_by                   = 10;  // user id
+  string status                        = 11;  // pending | committed
+  google.protobuf.Timestamp created_at = 12;
+}
+
+// Per-(project, manufacturer) NDA acceptance. Click-through for MVP; the row is
+// the audit trail. A manufacturer needs status='accepted' before the service
+// issues download URLs for a project's files.
+message NDA {
+  string id                             = 1;
+  string project_id                     = 2;
+  string manufacturer_id                = 3;  // soft ref to users(id), role=manufacturer
+  string status                         = 4;  // pending | accepted
+  string nda_version                    = 5;  // which NDA text was accepted
+  string accepted_ip                    = 6;  // captured at acceptance
+  google.protobuf.Timestamp accepted_at = 7;
+  google.protobuf.Timestamp created_at  = 8;
+}
+
+message CreateProjectRequest {
+  Project project = 1;   // server assigns id/status/timestamps
+}
+
+message GetProjectRequest {
+  string id       = 1;
+  string actor_id = 2;   // gateway-passed; service enforces owner-or-NDA'd-manufacturer
+}
+
+message ListProjectsRequest {
+  string owner_id = 1;
+  int32  limit    = 2;
+  int32  offset   = 3;
+  string status   = 4;   // optional filter
+}
+
+message ListProjectsResponse {
+  repeated Project projects = 1;
+  int32 total = 2;
+}
+
+message RequestUploadURLRequest {
+  string project_id   = 1;
+  string actor_id     = 2;   // must be the project owner
+  string kind         = 3;
+  string filename     = 4;
+  string content_type = 5;
+}
+
+// The presigned PUT the browser uploads to directly. Confirm afterward.
+message UploadURLResponse {
+  string file_id       = 1;   // pending DesignFile row
+  string upload_url    = 2;   // presigned PUT, short TTL
+  string object_key    = 3;
+  int32  expires_in_s  = 4;
+}
+
+message ConfirmUploadRequest {
+  string file_id        = 1;
+  string actor_id       = 2;   // must be the project owner
+  string content_sha256 = 3;
+  int64  size_bytes     = 4;
+}
+
+message ListFilesRequest {
+  string project_id = 1;
+  string actor_id   = 2;   // owner or NDA'd manufacturer
+}
+
+message ListFilesResponse {
+  repeated DesignFile files = 1;
+}
+
+message RequestDownloadURLRequest {
+  string file_id  = 1;
+  string actor_id = 2;   // owner, or manufacturer with an accepted NDA on the file's project
+}
+
+message DownloadURLResponse {
+  string download_url = 1;   // presigned GET, short TTL
+  string filename     = 2;
+  int32  expires_in_s = 3;
+}
+
+message AcceptNDARequest {
+  string project_id     = 1;
+  string manufacturer_id = 2;
+  string nda_version    = 3;
+  string accepted_ip    = 4;
+}
+
+message GetNDAStatusRequest {
+  string project_id      = 1;
+  string manufacturer_id = 2;
+}
+
+// The project owner invites a manufacturer to a project (typically when creating
+// an RFQ that references it). Creates a 'pending' NDA row — the invite. A
+// manufacturer can only AcceptNDA after being invited, which closes the
+// self-accept hole (a manufacturer can no longer accept an NDA on an arbitrary
+// project id it happens to know).
+message InviteManufacturerRequest {
+  string project_id      = 1;
+  string manufacturer_id = 2;
+  string actor_id        = 3;   // must be the project owner
+}
+
+service DesignService {
+  rpc InviteManufacturer(InviteManufacturerRequest)   returns (NDA);
+  rpc CreateProject(CreateProjectRequest)         returns (Project);
+  rpc GetProject(GetProjectRequest)               returns (Project);
+  rpc ListProjects(ListProjectsRequest)           returns (ListProjectsResponse);
+  rpc RequestUploadURL(RequestUploadURLRequest)   returns (UploadURLResponse);
+  rpc ConfirmUpload(ConfirmUploadRequest)         returns (DesignFile);
+  rpc ListFiles(ListFilesRequest)                 returns (ListFilesResponse);
+  rpc RequestDownloadURL(RequestDownloadURLRequest) returns (DownloadURLResponse);
+  rpc AcceptNDA(AcceptNDARequest)                 returns (NDA);
+  rpc GetNDAStatus(GetNDAStatusRequest)           returns (NDA);
+  rpc HealthCheck(google.protobuf.Empty)          returns (google.protobuf.Empty);
+}

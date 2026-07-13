@@ -22,6 +22,7 @@ message RFQ {
   google.protobuf.Timestamp created_at = 11;
   string buyer_email              = 12;  // denormalized at creation; notification emails need it
   string buyer_company            = 13;  // shown to suppliers on the magic-link page
+  string project_id               = 14;  // links to a design-service Project (custom-PCBA pivot); optional
 }
 
 message Quote {

@@ -6,6 +6,7 @@ import (
 	"notification-service/internal/application/dto"
 	"notification-service/internal/application/errors"
 	"notification-service/internal/application/services"
+	"notification-service/internal/infrastructure/rabbitmq"
 	"notification-service/internal/interface/validators"
 	"notification-service/pkg/logger"
 	"notification-service/pkg/utils"
@@ -13,13 +14,15 @@ import (
 
 type NotificationHandler struct {
 	notificationService *services.NotificationService
+	rabbitMQClient      *rabbitmq.Client
 	validator           *validators.NotificationValidator
 	logger              *logger.Logger
 }
 
-func NewNotificationHandler(notificationService *services.NotificationService, logger *logger.Logger) *NotificationHandler {
+func NewNotificationHandler(notificationService *services.NotificationService, rabbitMQClient *rabbitmq.Client, logger *logger.Logger) *NotificationHandler {
 	return &NotificationHandler{
 		notificationService: notificationService,
+		rabbitMQClient:      rabbitMQClient,
 		validator:           validators.NewNotificationValidator(),
 		logger:              logger,
 	}
@@ -59,6 +62,7 @@ func (h *NotificationHandler) GetNotification(c *gin.Context) {
 
 	if id == "" || userID == "" {
 		utils.ErrorResponse(c, errors.ErrInvalidRequest)
+		return
 	}
 
 	response, err := h.notificationService.GetNotification(c.Request.Context(), id, userID)
@@ -189,6 +193,10 @@ func (h *NotificationHandler) GetUnreadCount(c *gin.Context) {
 }
 
 func (h *NotificationHandler) HealthCheck(c *gin.Context) {
+	if h.rabbitMQClient == nil || !h.rabbitMQClient.IsConnected() {
+		utils.ErrorResponse(c, errors.ErrServiceUnavailable)
+		return
+	}
 	utils.SuccessResponse(c, http.StatusOK, "Notification service is healthy", gin.H{
 		"service": "notification-service",
 		"status":  "running",

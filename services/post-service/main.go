@@ -19,7 +19,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"post-service/interfaces/http/routes"
 	"post-service/internal/application/services"
 	"post-service/internal/clients"
 	"post-service/internal/config"
@@ -29,7 +28,6 @@ import (
 	"post-service/pkg/logger"
 	"post-service/pkg/metrics"
 
-	postv1 "github.com/nikitashilov/microblog_grpc/proto/post/v1"
 	rfqv1 "github.com/nikitashilov/microblog_grpc/proto/rfq/v1"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -60,8 +58,6 @@ func main() {
 		appLogger.Fatal("Failed to run migrations: " + err.Error())
 	}
 
-	postRepo := postgres.NewPostRepository(db)
-
 	var eventPublisher *messaging.EventPublisher
 
 	if cfg.RabbitMQ.Enabled {
@@ -82,10 +78,8 @@ func main() {
 		appLogger.Info("RabbitMQ not configured, running without event publishing")
 	}
 
-	postService := services.NewPostService(postRepo, eventPublisher, appLogger)
-
-	// RFQ flow uses pgx (sqlc-generated queries) alongside the legacy
-	// database/sql post repository.
+	// RFQ flow uses pgx (sqlc-generated queries); the database/sql db above is
+	// retained solely to drive golang-migrate on boot.
 	pgxPool, err := pgxpool.New(context.Background(), cfg.Database.URL)
 	if err != nil {
 		appLogger.Fatal("Failed to create pgx pool: " + err.Error())
@@ -138,7 +132,6 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer(grpcOptions...)
-	postv1.RegisterPostServiceServer(grpcServer, grpcinterface.NewPostServer(postService, appLogger))
 	rfqv1.RegisterRFQServiceServer(grpcServer, grpcinterface.NewRFQServer(rfqService, appLogger))
 	if cfg.EnableGRPCReflection {
 		grpc_reflection.Register(grpcServer)
@@ -164,8 +157,9 @@ func main() {
 	router.Use(gin.Recovery())
 	router.Use(metrics.GinMiddleware("post-service"))
 	router.GET("/metrics", gin.WrapH(metrics.Handler()))
-
-	routes.SetupPostRoutes(router, postService, appLogger)
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"service": "post-service", "status": "running"})
+	})
 
 	server := &http.Server{
 		Addr:         ":" + cfg.Port,

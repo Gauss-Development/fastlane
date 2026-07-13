@@ -40,10 +40,6 @@ func main() {
 	if err != nil {
 		appLogger.Fatal("Failed to connect to user service: " + err.Error())
 	}
-	postClient, err := clients.NewPostClient(cfg.Services.PostGRPCAddr, cfg.GRPCTLS, appLogger)
-	if err != nil {
-		appLogger.Fatal("Failed to connect to post service: " + err.Error())
-	}
 	searchClient, err := clients.NewSearchClient(cfg.Services.SearchGRPCAddr, cfg.GRPCTLS, appLogger)
 	if err != nil {
 		appLogger.Fatal("Failed to connect to search service: " + err.Error())
@@ -53,18 +49,31 @@ func main() {
 	if err != nil {
 		appLogger.Fatal("Failed to connect to rfq service: " + err.Error())
 	}
+	// design-service is a new, non-core dependency; deliberately excluded from
+	// testServiceConnections so the gateway still boots if it is temporarily down.
+	designClient, err := clients.NewDesignClient(cfg.Services.DesignGRPCAddr, cfg.GRPCTLS, appLogger)
+	if err != nil {
+		appLogger.Fatal("Failed to connect to design service: " + err.Error())
+	}
+	// catalog-service is a new, non-core dependency; deliberately excluded from
+	// testServiceConnections so the gateway still boots if it is temporarily down.
+	manufacturerClient, err := clients.NewManufacturerClient(cfg.Services.CatalogGRPCAddr, cfg.GRPCTLS, appLogger)
+	if err != nil {
+		appLogger.Fatal("Failed to connect to catalog service: " + err.Error())
+	}
 
 	// Test service connections
-	if err := testServiceConnections(authClient, userClient, postClient, searchClient, appLogger); err != nil {
+	if err := testServiceConnections(authClient, userClient, searchClient, appLogger); err != nil {
 		appLogger.Warn("Some services are not available: " + err.Error())
 	}
 
 	authHandler := handlers.NewAuthHandler(authClient, cfg, appLogger)
 	userHandler := handlers.NewUserHandler(userClient, appLogger)
-	postHandler := handlers.NewPostHandler(postClient, appLogger)
 	searchHandler := handlers.NewSearchHandler(searchClient, appLogger)
 	rfqHandler := handlers.NewRFQHandler(rfqClient, authClient, appLogger)
-	healthHandler := handlers.NewHealthHandler(authClient, userClient, postClient, cfg.Services.NotificationURL, appLogger)
+	projectHandler := handlers.NewProjectHandler(designClient, appLogger)
+	manufacturerHandler := handlers.NewManufacturerHandler(manufacturerClient, appLogger)
+	healthHandler := handlers.NewHealthHandler(authClient, userClient, cfg.Services.NotificationURL, appLogger)
 
 	// Setup HTTP server
 	if cfg.Environment == "production" {
@@ -86,7 +95,7 @@ func main() {
 	router.Use(middleware.SecurityHeaders(cfg.Environment))
 
 	// Setup routes
-	routes.SetupRoutes(router, authHandler, userHandler, postHandler, searchHandler, rfqHandler, healthHandler, authClient, redisClient, cfg)
+	routes.SetupRoutes(router, authHandler, userHandler, searchHandler, rfqHandler, projectHandler, manufacturerHandler, healthHandler, authClient, redisClient, cfg)
 
 	// Create HTTP server
 	server := &http.Server{
@@ -131,17 +140,20 @@ func main() {
 	if err := userClient.Close(); err != nil {
 		appLogger.Warn("Failed to close user client: " + err.Error())
 	}
-	if err := postClient.Close(); err != nil {
-		appLogger.Warn("Failed to close post client: " + err.Error())
-	}
 	if err := searchClient.Close(); err != nil {
 		appLogger.Warn("Failed to close search client: " + err.Error())
+	}
+	if err := designClient.Close(); err != nil {
+		appLogger.Warn("Failed to close design client: " + err.Error())
+	}
+	if err := manufacturerClient.Close(); err != nil {
+		appLogger.Warn("Failed to close manufacturer client: " + err.Error())
 	}
 
 	appLogger.Info("Server exited")
 }
 
-func testServiceConnections(authClient *clients.AuthClient, userClient *clients.UserClient, postClient *clients.PostClient, searchClient *clients.SearchClient, logger *logger.Logger) error {
+func testServiceConnections(authClient *clients.AuthClient, userClient *clients.UserClient, searchClient *clients.SearchClient, logger *logger.Logger) error {
 
 	logger.Info("Testing service connections...")
 
@@ -157,13 +169,6 @@ func testServiceConnections(authClient *clients.AuthClient, userClient *clients.
 		logger.Warn("User service health check failed: " + err.Error())
 	} else {
 		logger.Info("User service connected successfully")
-	}
-
-	// Test post service
-	if err := postClient.HealthCheck(context.Background()); err != nil {
-		logger.Warn("Post service health check failed: " + err.Error())
-	} else {
-		logger.Info("Post service connected successfully")
 	}
 
 	// Test search service

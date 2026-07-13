@@ -115,29 +115,6 @@ func (r *TokenRepository) GetTokenData(ctx context.Context, token string) (*enti
 	return r.getToken(ctx, key)
 }
 
-func (r *TokenRepository) DeleteToken(ctx context.Context, token string) error {
-	keys := []string{
-		r.accessTokenKey(token),
-		r.refreshTokenKey(token),
-	}
-
-	pipe := r.client.Pipeline()
-	for _, key := range keys {
-		pipe.Del(ctx, key)
-	}
-
-	if tokenData, err := r.GetTokenData(ctx, token); err == nil && tokenData != nil && tokenData.UserID != "" {
-		members := make([]interface{}, 0, len(keys))
-		for _, key := range keys {
-			members = append(members, key)
-		}
-		pipe.SRem(ctx, r.userTokenIndexKey(tokenData.UserID), members...)
-	}
-
-	_, err := pipe.Exec(ctx)
-	return err
-}
-
 func (r *TokenRepository) DeleteUserTokens(ctx context.Context, userID string) error {
 	keys, err := r.client.SMembers(ctx, r.userTokenIndexKey(userID)).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -208,28 +185,6 @@ func (r *TokenRepository) IsTokenBlacklisted(ctx context.Context, token string) 
 func (r *TokenRepository) BlacklistToken(ctx context.Context, token string, ttl time.Duration) error {
 	key := r.blacklistKey(token)
 	return r.client.Set(ctx, key, "blacklisted", ttl).Err()
-}
-
-// Security audit logging (optional but recommended)
-func (r *TokenRepository) LogAuthAttempt(ctx context.Context, userID, ip, userAgent string, success bool) error {
-	logEntry := map[string]interface{}{
-		"user_id":    userID,
-		"ip":         ip,
-		"user_agent": userAgent,
-		"success":    success,
-		"timestamp":  time.Now().Unix(),
-	}
-
-	jsonData, err := json.Marshal(logEntry)
-	if err != nil {
-		return fmt.Errorf("failed to marshal auth log: %w", err)
-	}
-
-	// Store with a key that allows for easy querying
-	key := fmt.Sprintf("auth:log:%s:%d", userID, time.Now().Unix())
-
-	// Keep auth logs for 30 days
-	return r.client.Set(ctx, key, jsonData, 30*24*time.Hour).Err()
 }
 
 // Private helper methods

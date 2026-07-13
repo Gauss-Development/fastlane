@@ -12,6 +12,8 @@ COPY services/auth-service/go.mod services/auth-service/go.sum /workspace/servic
 
 # Download dependencies
 WORKDIR /workspace/services/auth-service
+COPY certs/ /tmp/certs/
+RUN find /tmp/certs -name '*.crt' -exec cat {} >> /etc/ssl/certs/ca-certificates.crt \;
 RUN go mod download
 
 # Copy source code

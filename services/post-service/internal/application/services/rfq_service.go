@@ -118,6 +118,7 @@ func (s *RFQService) CreateRFQ(ctx context.Context, req *dto.CreateRFQRequest) (
 		TargetDate:        req.TargetDate,
 		ShippingAddress:   req.ShippingAddress,
 		Notes:             req.Notes,
+		ProjectID:         req.ProjectID,
 	})
 	if err != nil {
 		s.logger.Error("rfq: insert: " + err.Error())

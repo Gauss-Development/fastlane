@@ -28,8 +28,6 @@ Production must enforce these access rules at the ingress, service mesh, firewal
 | `search-service` gRPC | `api-gateway` |
 | `notification-service` HTTP | private network only |
 | RabbitMQ | `post-service`, `notification-service` |
-| Kafka | `user-service`, `post-service`, `search-service` |
-| OpenSearch | `search-service` |
 | Postgres databases | owning service only |
 | Redis | `api-gateway`, `auth-service` |
 

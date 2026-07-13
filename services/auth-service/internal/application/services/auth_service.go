@@ -33,9 +33,32 @@ type UserInfoResult interface {
 
 // UserServiceClient is used by auth-service for user lifecycle operations.
 type UserServiceClient interface {
-	CreateUser(ctx context.Context, id, email, name, picture, password string) (UserInfoResult, error)
+	CreateUser(ctx context.Context, id, email, name, picture, password, role, company string) (UserInfoResult, error)
 	GetUserByEmail(ctx context.Context, email string) (UserInfoResult, error)
 	ValidateCredentials(ctx context.Context, email, password string) (UserInfoResult, error)
+}
+
+// roleOf extracts a user's persona role if the result carries one.
+// ValidateCredentialsResponse has no role field; User (CreateUser/GetUserByEmail) does.
+func roleOf(result UserInfoResult) string {
+	if r, ok := result.(interface{ GetRole() string }); ok {
+		return r.GetRole()
+	}
+	return ""
+}
+
+// normalizeRegisterRole enforces the self-assignable persona set: startup |
+// manufacturer. Empty defaults to startup; admin (or anything else) is rejected —
+// admin must never be self-assignable via public register.
+func normalizeRegisterRole(role string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(role)) {
+	case "", "startup":
+		return "startup", nil
+	case "manufacturer":
+		return "manufacturer", nil
+	default:
+		return "", errors.ErrInvalidRequest
+	}
 }
 
 type AuthService struct {
@@ -246,6 +269,7 @@ func (s *AuthService) ExchangeAuthCode(ctx context.Context, req *dto.ExchangeAut
 			Email:   authPayload.User.Email,
 			Name:    authPayload.User.Name,
 			Picture: authPayload.User.Picture,
+			Role:    authPayload.User.Role,
 		},
 		Tokens: &dto.TokenPair{
 			AccessToken:  tokenPair.AccessToken,
@@ -289,9 +313,17 @@ func (s *AuthService) RefreshToken(ctx context.Context, req *dto.RefreshTokenReq
 		return nil, errors.ErrTokenBlacklisted
 	}
 
+	// Role travels in the refresh token's own claims — carry it forward so
+	// the rotated tokens keep the persona (fall back to the stored copy).
+	role := claims.Role
+	if role == "" {
+		role = storedToken.Role
+	}
+
 	userInfo := &entities.GoogleUserInfo{
 		ID:    storedToken.UserID,
 		Email: storedToken.Email,
+		Role:  role,
 	}
 
 	tokenPair, err := s.generateTokenPair(userInfo)
@@ -300,12 +332,25 @@ func (s *AuthService) RefreshToken(ctx context.Context, req *dto.RefreshTokenReq
 		return nil, errors.ErrTokenGeneration
 	}
 
-	if err := s.tokenRepo.BlacklistToken(ctx, req.RefreshToken, time.Duration(s.jwtConfig.RefreshTokenTTL)*time.Hour); err != nil {
-		s.logger.Warn(fmt.Sprintf("Failed to blacklist old refresh token: %v", err))
+	newToken := &entities.StoredToken{
+		UserID:    userInfo.ID,
+		Email:     userInfo.Email,
+		Role:      role,
+		CreatedAt: time.Now(),
+		ExpiresAt: tokenPair.ExpiresAt,
 	}
 
-	if err := s.storeTokens(ctx, tokenPair, userInfo); err != nil {
-		s.logger.Error(fmt.Sprintf("Failed to store new tokens: %v", err))
+	accessTTL := time.Duration(s.jwtConfig.AccessTokenTTL) * time.Minute
+	if err := s.tokenRepo.StoreAccessToken(ctx, tokenPair.AccessToken, newToken, accessTTL); err != nil {
+		s.logger.Error(fmt.Sprintf("Failed to store new access token: %v", err))
+		return nil, errors.ErrTokenStorage
+	}
+
+	// Atomically delete + de-index the old refresh token, store + index the
+	// new one, and blacklist the old one to prevent reuse.
+	refreshTTL := time.Duration(s.jwtConfig.RefreshTokenTTL) * time.Hour
+	if err := s.tokenRepo.RotateRefreshToken(ctx, req.RefreshToken, tokenPair.RefreshToken, newToken, refreshTTL); err != nil {
+		s.logger.Error(fmt.Sprintf("Failed to rotate refresh token: %v", err))
 		return nil, errors.ErrTokenStorage
 	}
 
@@ -313,6 +358,7 @@ func (s *AuthService) RefreshToken(ctx context.Context, req *dto.RefreshTokenReq
 		User: &dto.UserInfo{
 			ID:    storedToken.UserID,
 			Email: storedToken.Email,
+			Role:  role,
 		},
 		Tokens: &dto.TokenPair{
 			AccessToken:  tokenPair.AccessToken,
@@ -346,10 +392,17 @@ func (s *AuthService) Logout(ctx context.Context, req *dto.LogoutRequest) error 
 }
 
 // Register creates a user in user-service (email/password) and returns JWT tokens.
-func (s *AuthService) Register(ctx context.Context, email, password, name string) (*dto.RegisterResponse, error) {
+func (s *AuthService) Register(ctx context.Context, email, password, name, role string) (*dto.RegisterResponse, error) {
 	s.logger.Info(fmt.Sprintf("Registering user with email: %s", email))
 
-	userResp, err := s.userClient.CreateUser(ctx, "", email, name, "", password)
+	normalizedRole, err := normalizeRegisterRole(role)
+	if err != nil {
+		s.logger.Warn(fmt.Sprintf("Rejected non-self-assignable register role %q for %s", role, email))
+		return nil, err
+	}
+	role = normalizedRole
+
+	userResp, err := s.userClient.CreateUser(ctx, "", email, name, "", password, role, "")
 	if err != nil {
 		if st, ok := status.FromError(err); ok && st.Code() == codes.AlreadyExists {
 			return nil, errors.ErrUserAlreadyExists
@@ -358,11 +411,17 @@ func (s *AuthService) Register(ctx context.Context, email, password, name string
 		return nil, errors.ErrServiceUnavailable
 	}
 
+	// Trust the role user-service persisted; fall back to the requested one.
+	if r := roleOf(userResp); r != "" {
+		role = r
+	}
+
 	userInfo := &entities.GoogleUserInfo{
 		ID:            userResp.GetId(),
 		Email:         userResp.GetEmail(),
 		Name:          userResp.GetName(),
 		Picture:       userResp.GetPicture(),
+		Role:          role,
 		VerifiedEmail: true,
 	}
 
@@ -383,6 +442,7 @@ func (s *AuthService) Register(ctx context.Context, email, password, name string
 			Email:   userInfo.Email,
 			Name:    userInfo.Name,
 			Picture: userInfo.Picture,
+			Role:    userInfo.Role,
 		},
 		Tokens: &dto.TokenPair{
 			AccessToken:  tokenPair.AccessToken,
@@ -406,11 +466,21 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*dto.L
 		return nil, errors.ErrServiceUnavailable
 	}
 
+	// ValidateCredentialsResponse carries no role; re-read the user record to
+	// learn the persona so it lands in the JWT. A miss just yields an empty role.
+	role := ""
+	if fullUser, getErr := s.userClient.GetUserByEmail(ctx, userResp.GetEmail()); getErr != nil {
+		s.logger.Warn(fmt.Sprintf("Login: could not resolve role for %s: %v", userResp.GetEmail(), getErr))
+	} else {
+		role = roleOf(fullUser)
+	}
+
 	userInfo := &entities.GoogleUserInfo{
 		ID:            userResp.GetId(),
 		Email:         userResp.GetEmail(),
 		Name:          userResp.GetName(),
 		Picture:       userResp.GetPicture(),
+		Role:          role,
 		VerifiedEmail: true,
 	}
 
@@ -431,6 +501,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*dto.L
 			Email:   userInfo.Email,
 			Name:    userInfo.Name,
 			Picture: userInfo.Picture,
+			Role:    userInfo.Role,
 		},
 		Tokens: &dto.TokenPair{
 			AccessToken:  tokenPair.AccessToken,
@@ -467,6 +538,7 @@ func (s *AuthService) ValidateToken(ctx context.Context, token string) (*dto.Tok
 		Valid:  true,
 		UserID: claims.UserID,
 		Email:  claims.Email,
+		Role:   claims.Role,
 	}, nil
 }
 
@@ -477,6 +549,7 @@ func (s *AuthService) generateTokenPair(userInfo *entities.GoogleUserInfo) (*ent
 	accessClaims := &entities.TokenClaims{
 		UserID: userInfo.ID,
 		Email:  userInfo.Email,
+		Role:   userInfo.Role,
 		Type:   "access",
 	}
 	accessToken, err := s.jwtManager.GenerateToken(accessClaims, accessTokenTTL)
@@ -487,6 +560,7 @@ func (s *AuthService) generateTokenPair(userInfo *entities.GoogleUserInfo) (*ent
 	refreshClaims := &entities.TokenClaims{
 		UserID: userInfo.ID,
 		Email:  userInfo.Email,
+		Role:   userInfo.Role,
 		Type:   "refresh",
 	}
 	refreshToken, err := s.jwtManager.GenerateToken(refreshClaims, refreshTokenTTL)
@@ -508,6 +582,7 @@ func (s *AuthService) storeTokens(ctx context.Context, tokenPair *entities.Token
 	storedToken := &entities.StoredToken{
 		UserID:    userInfo.ID,
 		Email:     userInfo.Email,
+		Role:      userInfo.Role,
 		CreatedAt: now,
 		ExpiresAt: tokenPair.ExpiresAt,
 	}
@@ -526,7 +601,9 @@ func (s *AuthService) storeTokens(ctx context.Context, tokenPair *entities.Token
 }
 
 func (s *AuthService) ensureUserExists(ctx context.Context, googleUser *entities.GoogleUserInfo) (*entities.GoogleUserInfo, error) {
-	createResp, err := s.userClient.CreateUser(ctx, googleUser.ID, googleUser.Email, googleUser.Name, googleUser.Picture, "")
+	// OAuth signups default to the startup persona; suppliers/admins are not
+	// self-provisioned through Google.
+	createResp, err := s.userClient.CreateUser(ctx, googleUser.ID, googleUser.Email, googleUser.Name, googleUser.Picture, "", "startup", "")
 	if err == nil {
 		return mergeUserInfo(createResp, googleUser), nil
 	}
@@ -554,6 +631,7 @@ func mergeUserInfo(result UserInfoResult, fallback *entities.GoogleUserInfo) *en
 		Email:         result.GetEmail(),
 		Name:          result.GetName(),
 		Picture:       result.GetPicture(),
+		Role:          roleOf(result),
 		VerifiedEmail: true,
 	}
 
@@ -644,8 +722,6 @@ func normalizePKCE(platform entities.OAuthPlatform, req *dto.GoogleAuthURLReques
 	switch challengeMethod {
 	case "S256":
 		return codeChallenge, "S256", nil
-	case "PLAIN":
-		return codeChallenge, "plain", nil
 	default:
 		return "", "", errors.ErrInvalidRequest
 	}
@@ -674,10 +750,6 @@ func verifyPKCE(codeVerifier, codeChallenge, codeChallengeMethod string) error {
 		hash := sha256.Sum256([]byte(verifier))
 		expected := base64.RawURLEncoding.EncodeToString(hash[:])
 		if subtle.ConstantTimeCompare([]byte(expected), []byte(codeChallenge)) != 1 {
-			return errors.ErrInvalidCodeVerifier
-		}
-	case "PLAIN":
-		if subtle.ConstantTimeCompare([]byte(verifier), []byte(codeChallenge)) != 1 {
 			return errors.ErrInvalidCodeVerifier
 		}
 	default:

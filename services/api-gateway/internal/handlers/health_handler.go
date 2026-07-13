@@ -17,17 +17,15 @@ import (
 type HealthHandler struct {
 	authClient      *clients.AuthClient
 	userClient      *clients.UserClient
-	postClient      *clients.PostClient
 	notificationURL string
 	healthClient    *http.Client
 	logger          *logger.Logger
 }
 
-func NewHealthHandler(authClient *clients.AuthClient, userClient *clients.UserClient, postClient *clients.PostClient, notificationURL string, logger *logger.Logger) *HealthHandler {
+func NewHealthHandler(authClient *clients.AuthClient, userClient *clients.UserClient, notificationURL string, logger *logger.Logger) *HealthHandler {
 	return &HealthHandler{
 		authClient:      authClient,
 		userClient:      userClient,
-		postClient:      postClient,
 		notificationURL: strings.TrimSuffix(strings.TrimSpace(notificationURL), "/"),
 		healthClient: &http.Client{
 			Timeout: 3 * time.Second,
@@ -40,7 +38,6 @@ func (h *HealthHandler) HealthCheck(c *gin.Context) {
 	services := map[string]string{
 		"auth-service":         "healthy",
 		"user-service":         "healthy",
-		"post-service":         "healthy",
 		"notification-service": "healthy",
 	}
 
@@ -56,22 +53,19 @@ func (h *HealthHandler) HealthCheck(c *gin.Context) {
 		h.logger.Warn("User service health check failed: " + err.Error())
 	}
 
-	// Check post service
-	if err := h.postClient.HealthCheck(c.Request.Context()); err != nil {
-		services["post-service"] = "unhealthy"
-		h.logger.Warn("Post service health check failed: " + err.Error())
-	}
-
 	// Check notification service (HTTP health endpoint)
 	if err := h.checkNotificationService(c.Request.Context()); err != nil {
 		services["notification-service"] = "unhealthy"
 		h.logger.Warn("Notification service health check failed: " + err.Error())
 	}
 
-	// Determine overall status
+	// Determine overall status. Only request-critical services drive a 503;
+	// notification-service is a fire-and-forget email consumer, not on any
+	// request path, so its being down still reports HTTP 200.
+	criticalServices := []string{"auth-service", "user-service"}
 	overallStatus := "healthy"
-	for _, status := range services {
-		if status == "unhealthy" {
+	for _, svc := range criticalServices {
+		if services[svc] == "unhealthy" {
 			overallStatus = "degraded"
 			break
 		}

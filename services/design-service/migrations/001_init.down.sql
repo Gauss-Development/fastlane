@@ -1,0 +1,5 @@
+DROP SEQUENCE IF EXISTS file_id_seq;
+DROP SEQUENCE IF EXISTS project_id_seq;
+DROP TABLE IF EXISTS ndas;
+DROP TABLE IF EXISTS design_files;
+DROP TABLE IF EXISTS projects;

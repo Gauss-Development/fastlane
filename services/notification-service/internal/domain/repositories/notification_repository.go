@@ -14,6 +14,5 @@ type NotificationRepository interface {
 	MakeAllAsRead(ctx context.Context, userID string) error
 	Delete(ctx context.Context, id string, userID string) error
 	GetUnreadCount(ctx context.Context, userID string) (int64, error)
-	List(ctx context.Context, limit, offset int) ([]*entities.Notification, error)
 	DeleteOld(ctx context.Context, olderThan int) error
 }

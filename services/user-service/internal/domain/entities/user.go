@@ -16,10 +16,15 @@ type User struct {
 	Bio          string    `json:"bio,omitempty" db:"bio"`
 	Location     string    `json:"location,omitempty" db:"location"`
 	Website      string    `json:"website,omitempty" db:"website"`
+	Role         string    `json:"role" db:"role"`             // startup | manufacturer | admin
+	Company      string    `json:"company,omitempty" db:"company"`
 	IsActive     bool      `json:"is_active" db:"is_active"`
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
 }
+
+// ValidRoles is the canonical role set. 'admin' is never self-assignable via public register.
+var ValidRoles = map[string]bool{"startup": true, "manufacturer": true, "admin": true}
 
 type UserProfile struct {
 	ID       string `json:"id"`
@@ -29,6 +34,8 @@ type UserProfile struct {
 	Bio      string `json:"bio,omitempty"`
 	Location string `json:"location,omitempty"`
 	Website  string `json:"website,omitempty"`
+	Role     string `json:"role"`
+	Company  string `json:"company,omitempty"`
 }
 
 func (u *User) ToProfile() *UserProfile {
@@ -40,6 +47,8 @@ func (u *User) ToProfile() *UserProfile {
 		Bio:      u.Bio,
 		Location: u.Location,
 		Website:  u.Website,
+		Role:     u.Role,
+		Company:  u.Company,
 	}
 }
 
@@ -72,6 +81,10 @@ func (u *User) IsValid() error {
 		return fmt.Errorf("invalid website URL")
 	}
 
+	if !ValidRoles[u.Role] {
+		return fmt.Errorf("invalid role: %q", u.Role)
+	}
+
 	return nil
 }
 
@@ -81,6 +94,11 @@ func (u *User) Sanitize() {
 	u.Bio = strings.TrimSpace(u.Bio)
 	u.Location = strings.TrimSpace(u.Location)
 	u.Website = strings.TrimSpace(u.Website)
+	u.Company = strings.TrimSpace(u.Company)
+	u.Role = strings.TrimSpace(u.Role)
+	if u.Role == "" {
+		u.Role = "startup"
+	}
 }
 
 func isValidEmail(email string) bool {

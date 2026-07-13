@@ -8,7 +8,9 @@ SVC ?=
 # Optional command for exec/run helpers
 CMD ?= sh
 
-.PHONY: help compose up up-d down down-v stop start restart build build-no-cache pull push \
+SERVICES := api-gateway auth-service user-service post-service search-service notification-service design-service catalog-service
+
+.PHONY: help setup compose up up-d down down-v stop start restart build build-no-cache pull push \
 	ps top images config logs logs-f logs-svc shell exec run \
 	infra-up infra-down app-up app-down clean prune seed embed embed-dry
 
@@ -24,6 +26,13 @@ help: ## Show available commands
 	@echo "  make shell SVC=api-gateway"
 	@echo "  make exec SVC=user-service CMD='ls -la /app'"
 	@echo "  make compose ARGS='events --since 10m'"
+
+setup: ## Bootstrap local env files from committed templates (idempotent; never clobbers)
+	@cp -n .env.example .env 2>/dev/null && echo "created .env" || echo ".env exists — kept"
+	@for s in $(SERVICES); do \
+		cp -n services/$$s/.env.example services/$$s/.env 2>/dev/null && echo "created services/$$s/.env" || echo "services/$$s/.env exists — kept"; \
+	done
+	@echo "Done. Fill in secrets (JWT_SECRET, *_PASSWORD, *_API_KEY, ...) in .env before 'make up-d'."
 
 compose: ## Pass through any docker compose args: make compose ARGS='ps'
 	$(DC) $(ARGS)
@@ -95,17 +104,17 @@ run: ## Run one-off command in new service container (SVC=..., CMD='...')
 	@test -n "$(SVC)" || (echo "SVC is required. Example: make run SVC=post-service CMD='go test ./...'" && exit 1)
 	$(DC) run --rm $(SVC) $(CMD)
 
-infra-up: ## Start infrastructure only (redis, postgres, rabbitmq, opensearch, kafka, prometheus, grafana)
-	$(DC) up -d redis postgres_user postgres_post postgres_notification rabbitmq opensearch kafka prometheus grafana
+infra-up: ## Start infrastructure only (redis, postgres, rabbitmq, minio, prometheus, grafana)
+	$(DC) up -d redis postgres_user postgres_post postgres_notification postgres_design postgres_catalog rabbitmq minio createbuckets prometheus grafana
 
 infra-down: ## Stop infrastructure only
-	$(DC) stop redis postgres_user postgres_post postgres_notification rabbitmq opensearch kafka prometheus grafana
+	$(DC) stop redis postgres_user postgres_post postgres_notification postgres_design postgres_catalog rabbitmq minio prometheus grafana
 
 app-up: ## Start app services only (without infra)
-	$(DC) up -d auth-service user-service post-service notification-service search-service api-gateway
+	$(DC) up -d auth-service user-service post-service notification-service search-service design-service catalog-service api-gateway
 
 app-down: ## Stop app services only
-	$(DC) stop auth-service user-service post-service notification-service search-service api-gateway
+	$(DC) stop auth-service user-service post-service notification-service search-service design-service catalog-service api-gateway
 
 clean: ## Compose down + remove volumes
 	$(DC) down -v --remove-orphans

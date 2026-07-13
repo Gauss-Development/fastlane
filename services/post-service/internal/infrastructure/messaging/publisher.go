@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"github.com/streadway/amqp"
 	"post-service/pkg/logger"
+	"sync"
 	"time"
 )
 
 type EventPublisher struct {
+	mu           sync.RWMutex
 	connection   *amqp.Connection
 	channel      *amqp.Channel
 	exchangeName string
 	logger       *logger.Logger
-	done         chan error
 }
 
 type PostCreatedEvent struct {
@@ -74,7 +75,6 @@ func NewEventPublisher(rabbitMQURL, exchangeName string, logger *logger.Logger) 
 		channel:      ch,
 		exchangeName: exchangeName,
 		logger:       logger,
-		done:         make(chan error),
 	}
 
 	// Monitor connection
@@ -97,7 +97,10 @@ func (p *EventPublisher) PublishPostDeleted(event PostDeletedEvent) error {
 }
 
 func (p *EventPublisher) publishEvent(routingKey string, event interface{}) error {
-	if p.channel == nil {
+	p.mu.RLock()
+	ch := p.channel
+	p.mu.RUnlock()
+	if ch == nil {
 		return fmt.Errorf("publisher channel is not available")
 	}
 
@@ -106,7 +109,7 @@ func (p *EventPublisher) publishEvent(routingKey string, event interface{}) erro
 		return fmt.Errorf("failed to marshal event: %w", err)
 	}
 
-	err = p.channel.Publish(
+	err = ch.Publish(
 		p.exchangeName, // exchange
 		routingKey,     // routing key
 		false,          // mandatory
@@ -128,18 +131,23 @@ func (p *EventPublisher) publishEvent(routingKey string, event interface{}) erro
 }
 
 func (p *EventPublisher) monitorConnection() {
+	p.mu.RLock()
+	conn := p.connection
+	ch := p.channel
+	p.mu.RUnlock()
+	if conn == nil || ch == nil {
+		return
+	}
 	for {
 		select {
-		case err := <-p.connection.NotifyClose(make(chan *amqp.Error)):
+		case err := <-conn.NotifyClose(make(chan *amqp.Error)):
 			if err != nil {
 				p.logger.Error(fmt.Sprintf("RabbitMQ connection closed: %v", err))
-				p.done <- err
 				return
 			}
-		case err := <-p.channel.NotifyClose(make(chan *amqp.Error)):
+		case err := <-ch.NotifyClose(make(chan *amqp.Error)):
 			if err != nil {
 				p.logger.Error(fmt.Sprintf("RabbitMQ channel closed: %v", err))
-				p.done <- err
 				return
 			}
 		}
@@ -147,14 +155,13 @@ func (p *EventPublisher) monitorConnection() {
 }
 
 func (p *EventPublisher) IsConnected() bool {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
 	return p.connection != nil && !p.connection.IsClosed() && p.channel != nil
 }
 
 func (p *EventPublisher) Reconnect(rabbitMQURL string) error {
 	p.logger.Info("Attempting to reconnect to RabbitMQ...")
-
-	// Close existing connections
-	p.Close()
 
 	// Create new connection
 	conn, err := amqp.Dial(rabbitMQURL)
@@ -184,9 +191,12 @@ func (p *EventPublisher) Reconnect(rabbitMQURL string) error {
 		return fmt.Errorf("failed to redeclare exchange during reconnect: %w", err)
 	}
 
+	// Swap in the new connection/channel under the write lock, closing the old.
+	p.mu.Lock()
+	p.closeLocked()
 	p.connection = conn
 	p.channel = ch
-	p.done = make(chan error)
+	p.mu.Unlock()
 
 	// Restart monitoring
 	go p.monitorConnection()
@@ -198,6 +208,16 @@ func (p *EventPublisher) Reconnect(rabbitMQURL string) error {
 func (p *EventPublisher) Close() error {
 	p.logger.Info("Closing event publisher...")
 
+	p.mu.Lock()
+	p.closeLocked()
+	p.mu.Unlock()
+
+	p.logger.Info("Event publisher closed")
+	return nil
+}
+
+// closeLocked closes and nils the channel/connection. Caller must hold p.mu.
+func (p *EventPublisher) closeLocked() {
 	if p.channel != nil {
 		if err := p.channel.Close(); err != nil {
 			p.logger.Error(fmt.Sprintf("Failed to close channel: %v", err))
@@ -211,9 +231,6 @@ func (p *EventPublisher) Close() error {
 		}
 		p.connection = nil
 	}
-
-	p.logger.Info("Event publisher closed")
-	return nil
 }
 
 func (p *EventPublisher) HealthCheck() error {

@@ -54,6 +54,7 @@ type createRFQBody struct {
 	ShippingAddress   string                 `json:"shipping_address"`
 	Notes             string                 `json:"notes"`
 	BuyerCompany      string                 `json:"buyer_company"`
+	ProjectID         string                 `json:"project_id"`
 }
 
 // CreateRFQ handles POST /api/v1/rfqs.
@@ -103,6 +104,7 @@ func (h *RFQHandler) CreateRFQ(c *gin.Context) {
 		TargetDate:        body.TargetDate,
 		ShippingAddress:   body.ShippingAddress,
 		Notes:             body.Notes,
+		ProjectId:         strings.TrimSpace(body.ProjectID),
 	})
 	if err != nil {
 		h.handleRFQError(c, err, "CREATE_RFQ_FAILED", "Failed to create RFQ")

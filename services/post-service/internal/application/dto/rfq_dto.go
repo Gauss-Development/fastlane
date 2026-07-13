@@ -13,6 +13,7 @@ type CreateRFQRequest struct {
 	TargetDate        string          `json:"target_date"`
 	ShippingAddress   string          `json:"shipping_address"`
 	Notes             string          `json:"notes"`
+	ProjectID         string          `json:"project_id"`
 }
 
 type ListRFQsRequest struct {

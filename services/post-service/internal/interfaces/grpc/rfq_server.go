@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"post-service/internal/application/dto"
 	appErrors "post-service/internal/application/errors"
@@ -15,6 +16,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type RFQServer struct {
@@ -51,6 +53,7 @@ func (s *RFQServer) CreateRFQ(ctx context.Context, req *rfqv1.CreateRFQRequest) 
 		TargetDate:        rfq.GetTargetDate(),
 		ShippingAddress:   rfq.GetShippingAddress(),
 		Notes:             rfq.GetNotes(),
+		ProjectID:         rfq.GetProjectId(),
 	})
 	if err != nil {
 		return nil, s.toGRPCError(err)
@@ -192,8 +195,16 @@ func toProtoRFQ(rfq *entities.RFQ) *rfqv1.RFQ {
 		TargetDate:        rfq.TargetDate,
 		ShippingAddress:   rfq.ShippingAddress,
 		Notes:             rfq.Notes,
+		ProjectId:         rfq.ProjectID,
 		CreatedAt:         toTimestamp(rfq.CreatedAt),
 	}
+}
+
+func toTimestamp(t time.Time) *timestamppb.Timestamp {
+	if t.IsZero() {
+		return nil
+	}
+	return timestamppb.New(t)
 }
 
 func toProtoQuote(quote *entities.Quote) *rfqv1.Quote {

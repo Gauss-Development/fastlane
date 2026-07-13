@@ -60,6 +60,7 @@ type TokenValidationResponse struct {
 	Valid  bool   `json:"valid"`
 	UserID string `json:"user_id,omitempty"`
 	Email  string `json:"email,omitempty"`
+	Role   string `json:"role,omitempty"`
 }
 
 type UserInfo struct {
@@ -67,6 +68,7 @@ type UserInfo struct {
 	Email   string `json:"email"`
 	Name    string `json:"name,omitempty"`
 	Picture string `json:"picture,omitempty"`
+	Role    string `json:"role,omitempty"`
 }
 
 type TokenPair struct {

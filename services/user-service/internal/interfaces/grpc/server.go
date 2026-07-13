@@ -36,6 +36,8 @@ func (s *UserServer) CreateUser(ctx context.Context, req *userv1.CreateUserReque
 		Name:     req.GetName(),
 		Picture:  req.GetPicture(),
 		Password: req.GetPassword(),
+		Role:     req.GetRole(),
+		Company:  req.GetCompany(),
 	}
 
 	resp, err := s.service.CreateUser(ctx, dtoReq)
@@ -195,66 +197,6 @@ func (s *UserServer) GetStats(ctx context.Context, _ *emptypb.Empty) (*userv1.Us
 	return &userv1.UserStatsResponse{TotalActiveUsers: resp.TotalActiveUsers}, nil
 }
 
-func (s *UserServer) Follow(ctx context.Context, req *userv1.FollowRequest) (*emptypb.Empty, error) {
-	if req.GetFollowerId() == "" || req.GetFolloweeId() == "" {
-		return nil, status.Error(codes.InvalidArgument, appErrors.ErrInvalidRequest.Message)
-	}
-	if err := s.service.Follow(ctx, req.GetFollowerId(), req.GetFolloweeId()); err != nil {
-		return nil, s.toGRPCError(err)
-	}
-	return &emptypb.Empty{}, nil
-}
-
-func (s *UserServer) Unfollow(ctx context.Context, req *userv1.UnfollowRequest) (*emptypb.Empty, error) {
-	if req.GetFollowerId() == "" || req.GetFolloweeId() == "" {
-		return nil, status.Error(codes.InvalidArgument, appErrors.ErrInvalidRequest.Message)
-	}
-	if err := s.service.Unfollow(ctx, req.GetFollowerId(), req.GetFolloweeId()); err != nil {
-		return nil, s.toGRPCError(err)
-	}
-	return &emptypb.Empty{}, nil
-}
-
-func (s *UserServer) GetFollowers(ctx context.Context, req *userv1.GetFollowersRequest) (*userv1.ListFollowResponse, error) {
-	limit := int(req.GetLimit())
-	if limit <= 0 || limit > 100 {
-		limit = 20
-	}
-	users, nextCursor, err := s.service.GetFollowers(ctx, req.GetUserId(), limit, req.GetCursor())
-	if err != nil {
-		return nil, s.toGRPCError(err)
-	}
-	profiles := make([]*userv1.UserProfile, 0, len(users))
-	for _, u := range users {
-		profiles = append(profiles, toProtoUserProfile(u))
-	}
-	return &userv1.ListFollowResponse{Users: profiles, NextCursor: nextCursor}, nil
-}
-
-func (s *UserServer) GetFollowing(ctx context.Context, req *userv1.GetFollowingRequest) (*userv1.ListFollowResponse, error) {
-	limit := int(req.GetLimit())
-	if limit <= 0 || limit > 100 {
-		limit = 20
-	}
-	users, nextCursor, err := s.service.GetFollowing(ctx, req.GetUserId(), limit, req.GetCursor())
-	if err != nil {
-		return nil, s.toGRPCError(err)
-	}
-	profiles := make([]*userv1.UserProfile, 0, len(users))
-	for _, u := range users {
-		profiles = append(profiles, toProtoUserProfile(u))
-	}
-	return &userv1.ListFollowResponse{Users: profiles, NextCursor: nextCursor}, nil
-}
-
-func (s *UserServer) AreFollowed(ctx context.Context, req *userv1.AreFollowedRequest) (*userv1.AreFollowedResponse, error) {
-	ids, err := s.service.AreFollowed(ctx, req.GetFollowerId(), req.GetFolloweeIds())
-	if err != nil {
-		return nil, s.toGRPCError(err)
-	}
-	return &userv1.AreFollowedResponse{FollowedIds: ids}, nil
-}
-
 func (s *UserServer) HealthCheck(ctx context.Context, _ *emptypb.Empty) (*emptypb.Empty, error) {
 	return &emptypb.Empty{}, nil
 }
@@ -302,6 +244,8 @@ func toProtoUser(user *dto.UserResponse) *userv1.User {
 		Bio:       user.Bio,
 		Location:  user.Location,
 		Website:   user.Website,
+		Role:      user.Role,
+		Company:   user.Company,
 		IsActive:  user.IsActive,
 		CreatedAt: toTimestamp(user.CreatedAt),
 		UpdatedAt: toTimestamp(user.UpdatedAt),
@@ -321,6 +265,8 @@ func toProtoUserProfile(profile *dto.UserProfileResponse) *userv1.UserProfile {
 		Bio:      profile.Bio,
 		Location: profile.Location,
 		Website:  profile.Website,
+		Role:     profile.Role,
+		Company:  profile.Company,
 	}
 }
 
@@ -339,6 +285,8 @@ func toProtoListUsers(resp *dto.ListUsersResponse) *userv1.ListUsersResponse {
 			Bio:       user.Bio,
 			Location:  user.Location,
 			Website:   user.Website,
+			Role:      user.Role,
+			Company:   user.Company,
 			IsActive:  user.IsActive,
 			CreatedAt: toTimestamp(user.CreatedAt),
 			UpdatedAt: toTimestamp(user.UpdatedAt),

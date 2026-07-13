@@ -59,6 +59,7 @@ func (r *RFQRepository) CreateRFQ(ctx context.Context, rfq *entities.RFQ) (*enti
 		TargetDate:        toDate(rfq.TargetDate),
 		ShippingAddress:   nullableString(rfq.ShippingAddress),
 		Notes:             nullableString(rfq.Notes),
+		ProjectID:         nullableString(rfq.ProjectID),
 	})
 	if err != nil {
 		return nil, err
@@ -247,6 +248,7 @@ func rfqFromRow(row sqlcgen.Rfq) *entities.RFQ {
 		TargetDate:        dateString(row.TargetDate),
 		ShippingAddress:   deref(row.ShippingAddress),
 		Notes:             deref(row.Notes),
+		ProjectID:         deref(row.ProjectID),
 		CreatedAt:         row.CreatedAt.Time,
 	}
 }

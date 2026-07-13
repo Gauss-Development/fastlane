@@ -47,6 +47,7 @@ message UserInfo {
   string email = 2;
   string name = 3;
   string picture = 4;
+  string role = 5;
 }
 
 message TokenPair {
@@ -82,12 +83,14 @@ message ValidateTokenResponse {
   bool valid = 1;
   string user_id = 2;
   string email = 3;
+  string role = 4;
 }
 
 message RegisterRequest {
   string email = 1;
   string password = 2;
   string name = 3;
+  string role = 4;      // startup | manufacturer (self-signup); admin never self-assignable
 }
 
 message RegisterResponse {

@@ -191,24 +191,6 @@ func (r *NotificationRepository) GetUnreadCount(ctx context.Context, userID stri
 	return count, nil
 }
 
-func (r *NotificationRepository) List(ctx context.Context, limit, offset int) ([]*entities.Notification, error) {
-	query := `
-		SELECT id, user_id, type, title, message, data, read, created_at, read_at
-		FROM notifications 
-		ORDER BY created_at DESC
-		LIMIT $1 OFFSET $2
-	`
-
-	rows, err := r.db.QueryContext(ctx, query, limit, offset)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list notifs: %w", err)
-	}
-
-	defer rows.Close()
-
-	return r.scanNotifications(rows)
-}
-
 func (r *NotificationRepository) DeleteOld(ctx context.Context, olderThan int) error {
 	query := `DELETE FROM notifications WHERE created_at < $1`
 

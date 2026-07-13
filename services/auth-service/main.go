@@ -147,8 +147,8 @@ func main() {
 // userClientAdapter adapts *clients.UserClient to services.UserServiceClient (return type UserInfoResult).
 type userClientAdapter struct{ *clients.UserClient }
 
-func (a userClientAdapter) CreateUser(ctx context.Context, id, email, name, picture, password string) (services.UserInfoResult, error) {
-	return a.UserClient.CreateUser(ctx, id, email, name, picture, password)
+func (a userClientAdapter) CreateUser(ctx context.Context, id, email, name, picture, password, role, company string) (services.UserInfoResult, error) {
+	return a.UserClient.CreateUser(ctx, id, email, name, picture, password, role, company)
 }
 
 func (a userClientAdapter) GetUserByEmail(ctx context.Context, email string) (services.UserInfoResult, error) {

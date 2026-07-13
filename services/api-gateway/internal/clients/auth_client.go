@@ -87,10 +87,6 @@ func (c *AuthClient) HandleGoogleCallback(ctx context.Context, state, code strin
 	return resp, nil
 }
 
-func (c *AuthClient) ExchangeAuthCode(ctx context.Context, authCode string) (*authv1.ExchangeAuthCodeResponse, error) {
-	return c.ExchangeAuthCodeWithVerifier(ctx, authCode, "")
-}
-
 func (c *AuthClient) ExchangeAuthCodeWithVerifier(ctx context.Context, authCode, codeVerifier string) (*authv1.ExchangeAuthCodeResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, defaultAuthTimeout)
 	defer cancel()
@@ -156,11 +152,11 @@ func (c *AuthClient) ValidateMagicLinkToken(ctx context.Context, token string) (
 	return resp, nil
 }
 
-func (c *AuthClient) Register(ctx context.Context, email, password, name string) (*authv1.RegisterResponse, error) {
+func (c *AuthClient) Register(ctx context.Context, email, password, name, role string) (*authv1.RegisterResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, defaultAuthTimeout)
 	defer cancel()
 
-	req := &authv1.RegisterRequest{Email: email, Password: password, Name: name}
+	req := &authv1.RegisterRequest{Email: email, Password: password, Name: name, Role: role}
 	resp, err := c.client.Register(ctx, req)
 	if err != nil {
 		return nil, c.wrapError("register", err)

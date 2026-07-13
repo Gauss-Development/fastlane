@@ -116,6 +116,7 @@ func (s *AuthServer) ValidateToken(ctx context.Context, req *authv1.ValidateToke
 		Valid:  resp.Valid,
 		UserId: resp.UserID,
 		Email:  resp.Email,
+		Role:   resp.Role,
 	}, nil
 }
 
@@ -140,7 +141,7 @@ func (s *AuthServer) ValidateMagicLinkToken(ctx context.Context, req *authv1.Val
 }
 
 func (s *AuthServer) Register(ctx context.Context, req *authv1.RegisterRequest) (*authv1.RegisterResponse, error) {
-	resp, err := s.service.Register(ctx, req.GetEmail(), req.GetPassword(), req.GetName())
+	resp, err := s.service.Register(ctx, req.GetEmail(), req.GetPassword(), req.GetName(), req.GetRole())
 	if err != nil {
 		return nil, s.toGRPCError(err)
 	}
@@ -207,6 +208,7 @@ func toProtoUser(user *dto.UserInfo) *authv1.UserInfo {
 		Email:   user.Email,
 		Name:    user.Name,
 		Picture: user.Picture,
+		Role:    user.Role,
 	}
 }
 
