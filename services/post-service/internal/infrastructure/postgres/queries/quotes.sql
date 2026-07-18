@@ -30,3 +30,20 @@ SET price_usd      = $3,
     submitted_at   = now()
 WHERE rfq_id = $1 AND supplier_id = $2 AND status = 'pending'
 RETURNING *;
+
+-- name: InsertManufacturerQuote :one
+INSERT INTO quotes (id, rfq_id, manufacturer_id, product_id, price_usd, lead_time_days, validity_date, supplier_notes, status, submitted_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'submitted', now())
+RETURNING *;
+
+-- name: GetQuoteByID :one
+SELECT * FROM quotes WHERE id = $1;
+
+-- name: AcceptQuote :one
+UPDATE quotes SET status = 'accepted'
+WHERE id = $1 AND rfq_id = $2 AND status = 'submitted'
+RETURNING *;
+
+-- name: RejectOtherQuotes :exec
+UPDATE quotes SET status = 'rejected'
+WHERE rfq_id = $1 AND id <> $2 AND status IN ('pending', 'submitted');

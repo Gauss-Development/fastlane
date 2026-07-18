@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
 	"notification-service/internal/application/dto"
@@ -181,87 +180,6 @@ func (s *NotificationService) GetUnreadCount(ctx context.Context, userID string)
 	}
 
 	return count, nil
-}
-
-func (s *NotificationService) ProcessPostCreatedEvent(ctx context.Context, eventData []byte) error {
-	var event entities.PostCreatedEvent
-	if err := json.Unmarshal(eventData, &event); err != nil {
-		return fmt.Errorf("failed to unmarshal post created event: %w", err)
-	}
-
-	s.logger.Info(fmt.Sprintf("Processing post created event: %s by user %s", event.PostID, event.UserID))
-
-	// Create notification for post author (optional - they might not want to be notified about their own posts)
-	// In a real system, you might want to notify followers instead
-
-	// For demo purposes, we'll create a notification for the author
-	notification := event.ToNotification(event.UserID)
-	notification.ID = uuid.New().String()
-
-	// Validate and save
-	notification.Sanitize()
-	if err := notification.IsValid(); err != nil {
-		return fmt.Errorf("invalid notification from event: %w", err)
-	}
-
-	if err := s.notificationRepo.Create(ctx, notification); err != nil {
-		return fmt.Errorf("failed to create notification from event: %w", err)
-	}
-
-	s.logger.Info(fmt.Sprintf("Created notification %s for post created event", notification.ID))
-	return nil
-}
-
-func (s *NotificationService) ProcessPostUpdatedEvent(ctx context.Context, eventData []byte) error {
-	var event entities.PostUpdatedEvent
-	if err := json.Unmarshal(eventData, &event); err != nil {
-		return fmt.Errorf("failed to unmarshal post updated event: %w", err)
-	}
-
-	s.logger.Info(fmt.Sprintf("Processing post updated event: %s by user %s", event.PostID, event.UserID))
-
-	// Create notification for post author
-	notification := event.ToNotification(event.UserID)
-	notification.ID = uuid.New().String()
-
-	// Validate and save
-	notification.Sanitize()
-	if err := notification.IsValid(); err != nil {
-		return fmt.Errorf("invalid notification from event: %w", err)
-	}
-
-	if err := s.notificationRepo.Create(ctx, notification); err != nil {
-		return fmt.Errorf("failed to create notification from event: %w", err)
-	}
-
-	s.logger.Info(fmt.Sprintf("Created notification %s for post updated event", notification.ID))
-	return nil
-}
-
-func (s *NotificationService) ProcessPostDeletedEvent(ctx context.Context, eventData []byte) error {
-	var event entities.PostDeletedEvent
-	if err := json.Unmarshal(eventData, &event); err != nil {
-		return fmt.Errorf("failed to unmarshal post deleted event: %w", err)
-	}
-
-	s.logger.Info(fmt.Sprintf("Processing post deleted event: %s by user %s", event.PostID, event.UserID))
-
-	// Create notification for post author
-	notification := event.ToNotification(event.UserID)
-	notification.ID = uuid.New().String()
-
-	// Validate and save
-	notification.Sanitize()
-	if err := notification.IsValid(); err != nil {
-		return fmt.Errorf("invalid notification from event: %w", err)
-	}
-
-	if err := s.notificationRepo.Create(ctx, notification); err != nil {
-		return fmt.Errorf("failed to create notification from event: %w", err)
-	}
-
-	s.logger.Info(fmt.Sprintf("Created notification %s for post deleted event", notification.ID))
-	return nil
 }
 
 func (s *NotificationService) CleanupOldNotifications(ctx context.Context, olderThanDays int) error {

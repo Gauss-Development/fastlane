@@ -99,6 +99,22 @@ func (r *RFQRepository) CountRFQsByBuyer(ctx context.Context, buyerID, status st
 	})
 }
 
+func (r *RFQRepository) ListOpenRFQs(ctx context.Context, limit, offset int32) ([]*entities.RFQ, error) {
+	rows, err := r.queries.ListOpenRFQs(ctx, sqlcgen.ListOpenRFQsParams{Limit: limit, Offset: offset})
+	if err != nil {
+		return nil, err
+	}
+	rfqs := make([]*entities.RFQ, 0, len(rows))
+	for _, row := range rows {
+		rfqs = append(rfqs, rfqFromRow(row))
+	}
+	return rfqs, nil
+}
+
+func (r *RFQRepository) CountOpenRFQs(ctx context.Context) (int32, error) {
+	return r.queries.CountOpenRFQs(ctx)
+}
+
 func (r *RFQRepository) UpdateRFQStatus(ctx context.Context, id, status string) (*entities.RFQ, error) {
 	row, err := r.queries.UpdateRFQStatus(ctx, sqlcgen.UpdateRFQStatusParams{ID: id, Status: status})
 	if err != nil {
@@ -180,6 +196,57 @@ func (r *RFQRepository) SubmitQuote(ctx context.Context, rfqID, supplierID strin
 	return quoteFromRow(row), nil
 }
 
+func (r *RFQRepository) InsertManufacturerQuote(ctx context.Context, quote *entities.Quote) (*entities.Quote, error) {
+	mid, err := toUUID(quote.ManufacturerID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid manufacturer id: %w", err)
+	}
+	var productID pgtype.UUID
+	if quote.ProductID != "" {
+		if productID, err = toUUID(quote.ProductID); err != nil {
+			return nil, fmt.Errorf("invalid product id: %w", err)
+		}
+	}
+	price, err := toNumeric(quote.PriceUSD)
+	if err != nil {
+		return nil, fmt.Errorf("invalid price: %w", err)
+	}
+	row, err := r.queries.InsertManufacturerQuote(ctx, sqlcgen.InsertManufacturerQuoteParams{
+		ID:             quote.ID,
+		RfqID:          quote.RFQID,
+		ManufacturerID: mid,
+		ProductID:      productID,
+		PriceUsd:       price,
+		LeadTimeDays:   nullableInt32(quote.LeadTimeDays),
+		ValidityDate:   toDate(quote.ValidityDate),
+		SupplierNotes:  nullableString(quote.SupplierNotes),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return quoteFromRow(row), nil
+}
+
+func (r *RFQRepository) GetQuoteByID(ctx context.Context, id string) (*entities.Quote, error) {
+	row, err := r.queries.GetQuoteByID(ctx, id)
+	if err != nil {
+		return nil, mapNoRows(err)
+	}
+	return quoteFromRow(row), nil
+}
+
+func (r *RFQRepository) AcceptQuote(ctx context.Context, quoteID, rfqID string) (*entities.Quote, error) {
+	row, err := r.queries.AcceptQuote(ctx, sqlcgen.AcceptQuoteParams{ID: quoteID, RfqID: rfqID})
+	if err != nil {
+		return nil, mapNoRows(err)
+	}
+	return quoteFromRow(row), nil
+}
+
+func (r *RFQRepository) RejectOtherQuotes(ctx context.Context, rfqID, keepQuoteID string) error {
+	return r.queries.RejectOtherQuotes(ctx, sqlcgen.RejectOtherQuotesParams{RfqID: rfqID, ID: keepQuoteID})
+}
+
 func (r *RFQRepository) ListProductsByIDs(ctx context.Context, ids []string) ([]*entities.MatchedProduct, error) {
 	uuids, err := toUUIDs(ids)
 	if err != nil {
@@ -259,18 +326,19 @@ func quoteFromRow(row sqlcgen.Quote) *entities.Quote {
 		submittedAt = row.SubmittedAt.Time
 	}
 	return &entities.Quote{
-		ID:            row.ID,
-		RFQID:         row.RfqID,
-		SupplierID:    uuidString(row.SupplierID),
-		ProductID:     uuidString(row.ProductID),
-		PriceUSD:      numericFloat(row.PriceUsd),
-		LeadTimeDays:  derefInt32(row.LeadTimeDays),
-		ValidityDate:  dateString(row.ValidityDate),
-		SupplierNotes: deref(row.SupplierNotes),
-		MatchScore:    derefInt32(row.MatchScore),
-		Status:        row.Status,
-		SubmittedAt:   submittedAt,
-		CreatedAt:     row.CreatedAt.Time,
+		ID:             row.ID,
+		RFQID:          row.RfqID,
+		SupplierID:     uuidString(row.SupplierID),
+		ManufacturerID: uuidString(row.ManufacturerID),
+		ProductID:      uuidString(row.ProductID),
+		PriceUSD:       numericFloat(row.PriceUsd),
+		LeadTimeDays:   derefInt32(row.LeadTimeDays),
+		ValidityDate:   dateString(row.ValidityDate),
+		SupplierNotes:  deref(row.SupplierNotes),
+		MatchScore:     derefInt32(row.MatchScore),
+		Status:         row.Status,
+		SubmittedAt:    submittedAt,
+		CreatedAt:      row.CreatedAt.Time,
 	}
 }
 

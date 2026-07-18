@@ -52,6 +52,7 @@ type ServicesConfig struct {
 	SearchGRPCAddr  string
 	DesignGRPCAddr  string
 	CatalogGRPCAddr string
+	OrderGRPCAddr   string
 	NotificationURL string
 }
 
@@ -101,6 +102,7 @@ func Load() (*Config, error) {
 			SearchGRPCAddr:  getEnv("SEARCH_SERVICE_GRPC_ADDR", "localhost:50054"),
 			DesignGRPCAddr:  getEnv("DESIGN_SERVICE_GRPC_ADDR", "localhost:50056"),
 			CatalogGRPCAddr: getEnv("CATALOG_SERVICE_GRPC_ADDR", "localhost:50057"),
+			OrderGRPCAddr:   getEnv("ORDER_SERVICE_GRPC_ADDR", "order-service:50055"),
 			NotificationURL: getEnv("NOTIFICATION_SERVICE_URL", "http://localhost:8084"),
 		},
 		GRPCTLS: GRPCTLSConfig{

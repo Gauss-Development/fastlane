@@ -8,6 +8,7 @@ import type {
   ListRFQsResponse,
   Quote,
   RFQ,
+  SubmitManufacturerQuoteParams,
   SubmitSupplierQuoteParams,
   SupplierRFQView,
 } from "@/lib/rfqs/types";
@@ -37,12 +38,42 @@ export async function listRFQs(params?: { status?: string; limit?: number; offse
   return authenticatedFetch<ListRFQsResponse>(`${BFF_BASE_URL}/rfqs${suffix}`);
 }
 
+// Manufacturer board: open RFQs across all buyers (buyer email + address blanked server-side).
+export async function listOpenRFQs(params?: { limit?: number; offset?: number }): Promise<ListRFQsResponse> {
+  const query = new URLSearchParams();
+  if (params?.limit) query.set("limit", String(params.limit));
+  if (params?.offset) query.set("offset", String(params.offset));
+  const suffix = query.size > 0 ? `?${query.toString()}` : "";
+  return authenticatedFetch<ListRFQsResponse>(`${BFF_BASE_URL}/manufacturer-rfqs${suffix}`);
+}
+
 export async function getRFQ(id: string): Promise<RFQ> {
   return authenticatedFetch<RFQ>(`${BFF_BASE_URL}/rfqs/${encodeURIComponent(id)}`);
 }
 
 export async function listQuotes(rfqId: string): Promise<ListQuotesResponse> {
   return authenticatedFetch<ListQuotesResponse>(`${BFF_BASE_URL}/rfqs/${encodeURIComponent(rfqId)}/quotes`);
+}
+
+export async function acceptQuote(rfqId: string, quoteId: string): Promise<Quote> {
+  return authenticatedFetch<Quote>(
+    `${BFF_BASE_URL}/rfqs/${encodeURIComponent(rfqId)}/quotes/${encodeURIComponent(quoteId)}/accept`,
+    { method: "POST" },
+  );
+}
+
+export async function submitManufacturerQuote(
+  rfqId: string,
+  body: SubmitManufacturerQuoteParams,
+): Promise<Quote> {
+  return authenticatedFetch<Quote>(
+    `${BFF_BASE_URL}/manufacturer-rfqs/${encodeURIComponent(rfqId)}/quote`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
 }
 
 // Supplier magic-link surface: public, token-gated — plain fetch, no session.

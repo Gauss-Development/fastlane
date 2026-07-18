@@ -143,6 +143,30 @@ services:
       retries: 3
       start_period: 30s
 
+  # PostgreSQL for Order Service
+  postgres_order:
+    image: pgvector/pgvector:pg16
+    container_name: microservices_postgres_order
+    environment:
+      POSTGRES_DB: order_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_ORDER_PASSWORD:?POSTGRES_ORDER_PASSWORD is required}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    expose:
+      - "5432"
+    volumes:
+      - postgres_order_data:/var/lib/postgresql/data
+      - ./scripts/postgres-init-order.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - internal_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d order_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
   # Object storage for design files (presigned S3 URLs handed to the browser)
   minio:
     image: minio/minio:latest
@@ -544,6 +568,52 @@ services:
       retries: 3
       start_period: 40s
 
+  order-service:
+    build:
+      context: .
+      dockerfile: services/order-service/Dockerfile
+      args:
+        - BUILD_ENV=production
+    container_name: microservices_order_service
+    expose:
+      - "${ORDER_SERVICE_PORT:-8088}"
+      - "50055"
+    env_file:
+      - ./services/order-service/.env
+    environment:
+      PORT: ${ORDER_SERVICE_PORT:-8088}
+      GRPC_PORT: 50055
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      SERVICE_TRANSPORT_SECURITY: ${SERVICE_TRANSPORT_SECURITY:?SERVICE_TRANSPORT_SECURITY must be mesh or app_mtls}
+      INTERNAL_HTTP_TRUST_MODE: ${INTERNAL_HTTP_TRUST_MODE:?INTERNAL_HTTP_TRUST_MODE is required}
+      GRPC_TLS_ENABLED: ${GRPC_TLS_ENABLED:-false}
+      GRPC_TLS_CA_FILE: ${GRPC_TLS_CA_FILE:-}
+      GRPC_TLS_CERT_FILE: ${GRPC_TLS_CERT_FILE:-}
+      GRPC_TLS_KEY_FILE: ${GRPC_TLS_KEY_FILE:-}
+      GRPC_TLS_REQUIRE_CLIENT_CERT: ${GRPC_TLS_REQUIRE_CLIENT_CERT:-false}
+      GRPC_REFLECTION_ENABLED: ${GRPC_REFLECTION_ENABLED:-false}
+      DATABASE_URL: postgres://postgres:${POSTGRES_ORDER_PASSWORD:?POSTGRES_ORDER_PASSWORD is required}@postgres_order:5432/order_db?sslmode=disable
+      DB_MAX_OPEN_CONNS: ${DB_MAX_OPEN_CONNS:-25}
+      DB_MAX_IDLE_CONNS: ${DB_MAX_IDLE_CONNS:-10}
+      DB_CONN_MAX_LIFETIME: ${DB_CONN_MAX_LIFETIME:-60}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:?RABBITMQ_USER is required}:${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD is required}@rabbitmq:5672/${RABBITMQ_VHOST:?RABBITMQ_VHOST is required}
+      RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE:-microservices_events}
+    depends_on:
+      postgres_order:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - internal_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:${ORDER_SERVICE_PORT:-8088}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   # API Gateway
   api-gateway:
     build:
@@ -581,6 +651,7 @@ services:
       SEARCH_SERVICE_GRPC_ADDR: search-service:50054
       DESIGN_SERVICE_GRPC_ADDR: design-service:50056
       CATALOG_SERVICE_GRPC_ADDR: catalog-service:50057
+      ORDER_SERVICE_GRPC_ADDR: order-service:50055
       NOTIFICATION_SERVICE_URL: http://notification-service:${NOTIFICATION_SERVICE_PORT:-8084}
       RATE_LIMIT_RPM: ${RATE_LIMIT_RPM:-100}
       RATE_LIMIT_BURST: ${RATE_LIMIT_BURST:-20}
@@ -671,6 +742,8 @@ volumes:
   postgres_design_data:
     driver: local
   postgres_catalog_data:
+    driver: local
+  postgres_order_data:
     driver: local
   minio_data:
     driver: local

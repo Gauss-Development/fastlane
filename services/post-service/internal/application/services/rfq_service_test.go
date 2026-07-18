@@ -15,18 +15,20 @@ import (
 )
 
 type fakeRFQRepo struct {
-	rfqSeq    int64
-	quoteSeq  int64
-	rfqs      map[string]*entities.RFQ
-	quotes    map[string]*entities.Quote // keyed by rfqID+"|"+supplierID
-	products  []*entities.MatchedProduct
-	suppliers []*entities.SupplierContact
+	rfqSeq     int64
+	quoteSeq   int64
+	rfqs       map[string]*entities.RFQ
+	quotes     map[string]*entities.Quote // keyed by rfqID+"|"+supplierID for supplier quotes
+	quotesByID map[string]*entities.Quote // keyed by quoteID for all quotes
+	products   []*entities.MatchedProduct
+	suppliers  []*entities.SupplierContact
 }
 
 func newFakeRFQRepo() *fakeRFQRepo {
 	return &fakeRFQRepo{
-		rfqs:   map[string]*entities.RFQ{},
-		quotes: map[string]*entities.Quote{},
+		rfqs:       map[string]*entities.RFQ{},
+		quotes:     map[string]*entities.Quote{},
+		quotesByID: map[string]*entities.Quote{},
 	}
 }
 
@@ -63,6 +65,21 @@ func (f *fakeRFQRepo) CountRFQsByBuyer(ctx context.Context, buyerID, status stri
 	return int32(len(rfqs)), nil
 }
 
+func (f *fakeRFQRepo) ListOpenRFQs(_ context.Context, _, _ int32) ([]*entities.RFQ, error) {
+	out := []*entities.RFQ{}
+	for _, rfq := range f.rfqs {
+		if rfq.Status == entities.RFQStatusOpen {
+			out = append(out, rfq)
+		}
+	}
+	return out, nil
+}
+
+func (f *fakeRFQRepo) CountOpenRFQs(ctx context.Context) (int32, error) {
+	rfqs, _ := f.ListOpenRFQs(ctx, 0, 0)
+	return int32(len(rfqs)), nil
+}
+
 func (f *fakeRFQRepo) UpdateRFQStatus(_ context.Context, id, status string) (*entities.RFQ, error) {
 	rfq, ok := f.rfqs[id]
 	if !ok {
@@ -77,6 +94,7 @@ func (f *fakeRFQRepo) CreatePendingQuote(_ context.Context, quote *entities.Quot
 	stored.Status = entities.QuoteStatusPending
 	stored.CreatedAt = time.Now()
 	f.quotes[quote.RFQID+"|"+quote.SupplierID] = &stored
+	f.quotesByID[quote.ID] = &stored
 	return &stored, nil
 }
 
@@ -109,7 +127,44 @@ func (f *fakeRFQRepo) SubmitQuote(_ context.Context, rfqID, supplierID string, p
 	quote.SupplierNotes = supplierNotes
 	quote.Status = entities.QuoteStatusSubmitted
 	quote.SubmittedAt = time.Now()
+	f.quotesByID[quote.ID] = quote
 	return quote, nil
+}
+
+func (f *fakeRFQRepo) InsertManufacturerQuote(_ context.Context, quote *entities.Quote) (*entities.Quote, error) {
+	stored := *quote
+	stored.Status = entities.QuoteStatusSubmitted
+	stored.SubmittedAt = time.Now()
+	stored.CreatedAt = time.Now()
+	f.quotesByID[quote.ID] = &stored
+	return &stored, nil
+}
+
+func (f *fakeRFQRepo) GetQuoteByID(_ context.Context, id string) (*entities.Quote, error) {
+	q, ok := f.quotesByID[id]
+	if !ok {
+		return nil, postgres.ErrNoRows
+	}
+	return q, nil
+}
+
+func (f *fakeRFQRepo) AcceptQuote(_ context.Context, quoteID, rfqID string) (*entities.Quote, error) {
+	q, ok := f.quotesByID[quoteID]
+	if !ok || q.RFQID != rfqID || q.Status != entities.QuoteStatusSubmitted {
+		return nil, postgres.ErrNoRows
+	}
+	q.Status = entities.QuoteStatusAccepted
+	return q, nil
+}
+
+func (f *fakeRFQRepo) RejectOtherQuotes(_ context.Context, rfqID, keepQuoteID string) error {
+	for _, q := range f.quotesByID {
+		if q.RFQID == rfqID && q.ID != keepQuoteID &&
+			(q.Status == entities.QuoteStatusPending || q.Status == entities.QuoteStatusSubmitted) {
+			q.Status = entities.QuoteStatusRejected
+		}
+	}
+	return nil
 }
 
 func (f *fakeRFQRepo) ListProductsByIDs(_ context.Context, ids []string) ([]*entities.MatchedProduct, error) {
@@ -152,6 +207,7 @@ func (f *fakeIssuer) IssueMagicLinkToken(_ context.Context, rfqID, supplierID st
 type fakePublisher struct {
 	created   []messaging.RFQCreatedEvent
 	submitted []messaging.QuoteSubmittedEvent
+	accepted  []messaging.QuoteAcceptedEvent
 }
 
 func (f *fakePublisher) PublishRFQCreated(event messaging.RFQCreatedEvent) error {
@@ -161,6 +217,11 @@ func (f *fakePublisher) PublishRFQCreated(event messaging.RFQCreatedEvent) error
 
 func (f *fakePublisher) PublishQuoteSubmitted(event messaging.QuoteSubmittedEvent) error {
 	f.submitted = append(f.submitted, event)
+	return nil
+}
+
+func (f *fakePublisher) PublishQuoteAccepted(event messaging.QuoteAcceptedEvent) error {
+	f.accepted = append(f.accepted, event)
 	return nil
 }
 
@@ -357,6 +418,150 @@ func TestSubmitQuoteFlow(t *testing.T) {
 		LeadTimeDays: 10,
 	}); err != appErrors.ErrQuoteNotFound {
 		t.Errorf("err = %v, want ErrQuoteNotFound", err)
+	}
+}
+
+func TestSubmitManufacturerQuoteHappyPath(t *testing.T) {
+	repo := seededRepo()
+	publisher := &fakePublisher{}
+	svc := newTestRFQService(repo, &fakeIssuer{}, publisher)
+	rfq, err := svc.CreateRFQ(context.Background(), createReq())
+	if err != nil {
+		t.Fatalf("CreateRFQ: %v", err)
+	}
+
+	quote, err := svc.SubmitManufacturerQuote(context.Background(), &dto.SubmitManufacturerQuoteRequest{
+		RFQID:          rfq.ID,
+		ManufacturerID: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+		PriceUSD:       210.00,
+		LeadTimeDays:   10,
+	})
+	if err != nil {
+		t.Fatalf("SubmitManufacturerQuote: %v", err)
+	}
+	if quote.Status != entities.QuoteStatusSubmitted {
+		t.Errorf("quote status = %q, want submitted", quote.Status)
+	}
+	if quote.ManufacturerID != "dddddddd-dddd-dddd-dddd-dddddddddddd" {
+		t.Errorf("manufacturer_id = %q", quote.ManufacturerID)
+	}
+	if quote.SupplierID != "" {
+		t.Errorf("supplier_id should be empty for manufacturer quote, got %q", quote.SupplierID)
+	}
+
+	updated, _ := repo.GetRFQByID(context.Background(), rfq.ID)
+	if updated.Status != entities.RFQStatusQuoted {
+		t.Errorf("rfq status = %q, want quoted", updated.Status)
+	}
+
+	if len(publisher.submitted) != 1 {
+		t.Fatalf("quote.submitted events = %d, want 1", len(publisher.submitted))
+	}
+	if publisher.submitted[0].SupplierID != "" {
+		t.Errorf("supplier_id in event should be empty for manufacturer quote")
+	}
+}
+
+func TestSubmitManufacturerQuoteValidation(t *testing.T) {
+	svc := newTestRFQService(seededRepo(), &fakeIssuer{}, &fakePublisher{})
+	for _, tc := range []struct {
+		name string
+		req  dto.SubmitManufacturerQuoteRequest
+	}{
+		{"empty rfq_id", dto.SubmitManufacturerQuoteRequest{ManufacturerID: "mid", PriceUSD: 10, LeadTimeDays: 1}},
+		{"empty manufacturer_id", dto.SubmitManufacturerQuoteRequest{RFQID: "r1", PriceUSD: 10, LeadTimeDays: 1}},
+		{"zero price", dto.SubmitManufacturerQuoteRequest{RFQID: "r1", ManufacturerID: "mid", LeadTimeDays: 1}},
+		{"zero lead_time", dto.SubmitManufacturerQuoteRequest{RFQID: "r1", ManufacturerID: "mid", PriceUSD: 10}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			req := tc.req
+			if _, err := svc.SubmitManufacturerQuote(context.Background(), &req); err != appErrors.ErrInvalidRequest {
+				t.Errorf("err = %v, want ErrInvalidRequest", err)
+			}
+		})
+	}
+}
+
+func TestAcceptQuoteHappyPath(t *testing.T) {
+	repo := seededRepo()
+	publisher := &fakePublisher{}
+	svc := newTestRFQService(repo, &fakeIssuer{}, publisher)
+
+	rfq, _ := svc.CreateRFQ(context.Background(), createReq())
+	// supplier submits a quote
+	q, err := svc.SubmitQuote(context.Background(), &dto.SubmitQuoteRequest{
+		RFQID:        rfq.ID,
+		SupplierID:   "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+		PriceUSD:     185.50,
+		LeadTimeDays: 12,
+	})
+	if err != nil {
+		t.Fatalf("SubmitQuote: %v", err)
+	}
+
+	accepted, err := svc.AcceptQuote(context.Background(), rfq.ID, q.ID, "buyer-1")
+	if err != nil {
+		t.Fatalf("AcceptQuote: %v", err)
+	}
+	if accepted.Status != entities.QuoteStatusAccepted {
+		t.Errorf("quote status = %q, want accepted", accepted.Status)
+	}
+
+	updatedRFQ, _ := repo.GetRFQByID(context.Background(), rfq.ID)
+	if updatedRFQ.Status != entities.RFQStatusAccepted {
+		t.Errorf("rfq status = %q, want accepted", updatedRFQ.Status)
+	}
+
+	if len(publisher.accepted) != 1 {
+		t.Fatalf("quote.accepted events = %d, want 1", len(publisher.accepted))
+	}
+	ev := publisher.accepted[0]
+	if ev.QuoteID != q.ID || ev.RFQID != rfq.ID || ev.BuyerID != "buyer-1" {
+		t.Errorf("event = %+v, unexpected fields", ev)
+	}
+	if ev.PriceUSD != 185.50 {
+		t.Errorf("event price = %v, want 185.50", ev.PriceUSD)
+	}
+
+	// Other pending quotes are rejected.
+	quotes, _ := repo.ListQuotesForRFQ(context.Background(), rfq.ID)
+	for _, qt := range quotes {
+		if qt.ID == q.ID {
+			continue
+		}
+		if qt.Status != entities.QuoteStatusRejected {
+			t.Errorf("other quote %s status = %q, want rejected", qt.ID, qt.Status)
+		}
+	}
+}
+
+func TestAcceptQuoteWrongActor(t *testing.T) {
+	repo := seededRepo()
+	svc := newTestRFQService(repo, &fakeIssuer{}, &fakePublisher{})
+	rfq, _ := svc.CreateRFQ(context.Background(), createReq())
+	q, _ := svc.SubmitQuote(context.Background(), &dto.SubmitQuoteRequest{
+		RFQID:        rfq.ID,
+		SupplierID:   "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+		PriceUSD:     185.50,
+		LeadTimeDays: 12,
+	})
+
+	if _, err := svc.AcceptQuote(context.Background(), rfq.ID, q.ID, "intruder"); err != appErrors.ErrUnauthorizedAccess {
+		t.Errorf("err = %v, want ErrUnauthorizedAccess", err)
+	}
+}
+
+func TestAcceptQuoteNonSubmittedQuote(t *testing.T) {
+	repo := seededRepo()
+	svc := newTestRFQService(repo, &fakeIssuer{}, &fakePublisher{})
+	rfq, _ := svc.CreateRFQ(context.Background(), createReq())
+
+	// pending quote (not yet submitted) cannot be accepted
+	quotes, _ := repo.ListQuotesForRFQ(context.Background(), rfq.ID)
+	pendingQuote := quotes[0]
+
+	if _, err := svc.AcceptQuote(context.Background(), rfq.ID, pendingQuote.ID, "buyer-1"); err != appErrors.ErrInvalidRequest {
+		t.Errorf("err = %v, want ErrInvalidRequest", err)
 	}
 }
 

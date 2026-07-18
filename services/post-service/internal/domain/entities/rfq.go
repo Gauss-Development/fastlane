@@ -40,18 +40,19 @@ type RFQ struct {
 }
 
 type Quote struct {
-	ID            string    `json:"id"`
-	RFQID         string    `json:"rfq_id"`
-	SupplierID    string    `json:"supplier_id"`
-	ProductID     string    `json:"product_id"`
-	PriceUSD      float64   `json:"price_usd"`
-	LeadTimeDays  int32     `json:"lead_time_days"`
-	ValidityDate  string    `json:"validity_date"` // ISO-8601 date, empty when unset
-	SupplierNotes string    `json:"supplier_notes"`
-	MatchScore    int32     `json:"match_score"`
-	Status        string    `json:"status"`
-	SubmittedAt   time.Time `json:"submitted_at"` // zero when not submitted
-	CreatedAt     time.Time `json:"created_at"`
+	ID             string    `json:"id"`
+	RFQID          string    `json:"rfq_id"`
+	SupplierID     string    `json:"supplier_id"`     // empty for manufacturer quotes
+	ManufacturerID string    `json:"manufacturer_id"` // empty for supplier quotes
+	ProductID      string    `json:"product_id"`
+	PriceUSD       float64   `json:"price_usd"`
+	LeadTimeDays   int32     `json:"lead_time_days"`
+	ValidityDate   string    `json:"validity_date"` // ISO-8601 date, empty when unset
+	SupplierNotes  string    `json:"supplier_notes"`
+	MatchScore     int32     `json:"match_score"`
+	Status         string    `json:"status"`
+	SubmittedAt    time.Time `json:"submitted_at"` // zero when not submitted
+	CreatedAt      time.Time `json:"created_at"`
 }
 
 // MatchedProduct is the slice of the catalog the RFQ flow needs: enough to

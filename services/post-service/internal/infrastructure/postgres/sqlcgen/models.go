@@ -9,43 +9,6 @@ import (
 	pgvector_go "github.com/pgvector/pgvector-go"
 )
 
-type Order struct {
-	ID                 string             `db:"id" json:"id"`
-	BuyerID            string             `db:"buyer_id" json:"buyer_id"`
-	SupplierID         pgtype.UUID        `db:"supplier_id" json:"supplier_id"`
-	QuoteID            string             `db:"quote_id" json:"quote_id"`
-	RfqID              string             `db:"rfq_id" json:"rfq_id"`
-	Status             string             `db:"status" json:"status"`
-	PaymentStatus      string             `db:"payment_status" json:"payment_status"`
-	QcStatus           *string            `db:"qc_status" json:"qc_status"`
-	TotalUsd           pgtype.Numeric     `db:"total_usd" json:"total_usd"`
-	ShippingAddress    *string            `db:"shipping_address" json:"shipping_address"`
-	ShippingCity       *string            `db:"shipping_city" json:"shipping_city"`
-	ShippingCountry    *string            `db:"shipping_country" json:"shipping_country"`
-	WarrantyUntil      pgtype.Date        `db:"warranty_until" json:"warranty_until"`
-	CancelledAt        pgtype.Timestamptz `db:"cancelled_at" json:"cancelled_at"`
-	CancellationReason *string            `db:"cancellation_reason" json:"cancellation_reason"`
-	CreatedAt          pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	UpdatedAt          pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-}
-
-type OrderEvent struct {
-	ID         pgtype.UUID        `db:"id" json:"id"`
-	OrderID    string             `db:"order_id" json:"order_id"`
-	EventType  string             `db:"event_type" json:"event_type"`
-	FromStatus *string            `db:"from_status" json:"from_status"`
-	ToStatus   *string            `db:"to_status" json:"to_status"`
-	ActorID    *string            `db:"actor_id" json:"actor_id"`
-	ActorType  string             `db:"actor_type" json:"actor_type"`
-	OccurredAt pgtype.Timestamptz `db:"occurred_at" json:"occurred_at"`
-	OccurredTz string             `db:"occurred_tz" json:"occurred_tz"`
-	Location   *string            `db:"location" json:"location"`
-	Payload    []byte             `db:"payload" json:"payload"`
-	Documents  []byte             `db:"documents" json:"documents"`
-	Notes      *string            `db:"notes" json:"notes"`
-	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
-}
-
 type Post struct {
 	ID        string           `db:"id" json:"id"`
 	UserID    string           `db:"user_id" json:"user_id"`
@@ -75,18 +38,19 @@ type Product struct {
 }
 
 type Quote struct {
-	ID            string             `db:"id" json:"id"`
-	RfqID         string             `db:"rfq_id" json:"rfq_id"`
-	SupplierID    pgtype.UUID        `db:"supplier_id" json:"supplier_id"`
-	ProductID     pgtype.UUID        `db:"product_id" json:"product_id"`
-	PriceUsd      pgtype.Numeric     `db:"price_usd" json:"price_usd"`
-	LeadTimeDays  *int32             `db:"lead_time_days" json:"lead_time_days"`
-	ValidityDate  pgtype.Date        `db:"validity_date" json:"validity_date"`
-	SupplierNotes *string            `db:"supplier_notes" json:"supplier_notes"`
-	MatchScore    *int32             `db:"match_score" json:"match_score"`
-	Status        string             `db:"status" json:"status"`
-	SubmittedAt   pgtype.Timestamptz `db:"submitted_at" json:"submitted_at"`
-	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	ID             string             `db:"id" json:"id"`
+	RfqID          string             `db:"rfq_id" json:"rfq_id"`
+	SupplierID     pgtype.UUID        `db:"supplier_id" json:"supplier_id"`
+	ProductID      pgtype.UUID        `db:"product_id" json:"product_id"`
+	PriceUsd       pgtype.Numeric     `db:"price_usd" json:"price_usd"`
+	LeadTimeDays   *int32             `db:"lead_time_days" json:"lead_time_days"`
+	ValidityDate   pgtype.Date        `db:"validity_date" json:"validity_date"`
+	SupplierNotes  *string            `db:"supplier_notes" json:"supplier_notes"`
+	MatchScore     *int32             `db:"match_score" json:"match_score"`
+	Status         string             `db:"status" json:"status"`
+	SubmittedAt    pgtype.Timestamptz `db:"submitted_at" json:"submitted_at"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	ManufacturerID pgtype.UUID        `db:"manufacturer_id" json:"manufacturer_id"`
 }
 
 type Rfq struct {

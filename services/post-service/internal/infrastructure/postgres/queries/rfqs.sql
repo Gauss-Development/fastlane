@@ -28,6 +28,15 @@ SELECT COUNT(*)::int FROM rfqs
 WHERE buyer_id = $1
   AND (sqlc.narg('status')::text IS NULL OR status = sqlc.narg('status')::text);
 
+-- name: ListOpenRFQs :many
+SELECT * FROM rfqs
+WHERE status = 'open'
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2;
+
+-- name: CountOpenRFQs :one
+SELECT COUNT(*)::int FROM rfqs WHERE status = 'open';
+
 -- name: UpdateRFQStatus :one
 UPDATE rfqs SET status = $2 WHERE id = $1
 RETURNING *;

@@ -18,6 +18,7 @@ func SetupRoutes(
 	rfqHandler *handlers.RFQHandler,
 	projectHandler *handlers.ProjectHandler,
 	manufacturerHandler *handlers.ManufacturerHandler,
+	orderHandler *handlers.OrderHandler,
 	healthHandler *handlers.HealthHandler,
 	authClient *clients.AuthClient,
 	redisClient *clients.RedisClient,
@@ -93,7 +94,21 @@ func SetupRoutes(
 				rfqs.GET("", rfqHandler.ListRFQs)
 				rfqs.GET("/:id", rfqHandler.GetRFQ)
 				rfqs.GET("/:id/quotes", rfqHandler.ListQuotes)
+				rfqs.POST("/:id/quotes/:quoteId/accept", rfqHandler.AcceptQuote)
 			}
+
+			// Order flow: buyer views and tracks orders created from accepted quotes.
+			orders := protectedGroup.Group("/orders")
+			{
+				orders.GET("", orderHandler.ListOrders)
+				orders.GET("/:id", orderHandler.GetOrder)
+				orders.GET("/:id/events", orderHandler.ListEvents)
+				orders.POST("/:id/events", orderHandler.AppendEvent)
+			}
+			// Manufacturer RFQ board: open quote requests for logged-in factories.
+			// Top-level path to avoid gin static-vs-:id sibling conflicts under /rfqs.
+			protectedGroup.GET("/manufacturer-rfqs", middleware.RequireRole("manufacturer"), rfqHandler.ListOpenRFQs)
+			protectedGroup.POST("/manufacturer-rfqs/:id/quote", middleware.RequireRole("manufacturer"), rfqHandler.ManufacturerSubmitQuote)
 
 			// Design flow: startup projects, design files, and per-manufacturer NDAs.
 			// gateway maps userID -> owner_id / actor_id / manufacturer_id.

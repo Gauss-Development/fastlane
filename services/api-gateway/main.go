@@ -61,6 +61,12 @@ func main() {
 	if err != nil {
 		appLogger.Fatal("Failed to connect to catalog service: " + err.Error())
 	}
+	// order-service is a new, non-core dependency; deliberately excluded from
+	// testServiceConnections so the gateway still boots if it is temporarily down.
+	orderClient, err := clients.NewOrderClient(cfg.Services.OrderGRPCAddr, cfg.GRPCTLS, appLogger)
+	if err != nil {
+		appLogger.Fatal("Failed to connect to order service: " + err.Error())
+	}
 
 	// Test service connections
 	if err := testServiceConnections(authClient, userClient, searchClient, appLogger); err != nil {
@@ -70,7 +76,8 @@ func main() {
 	authHandler := handlers.NewAuthHandler(authClient, cfg, appLogger)
 	userHandler := handlers.NewUserHandler(userClient, appLogger)
 	searchHandler := handlers.NewSearchHandler(searchClient, appLogger)
-	rfqHandler := handlers.NewRFQHandler(rfqClient, authClient, appLogger)
+	rfqHandler := handlers.NewRFQHandler(rfqClient, authClient, manufacturerClient, appLogger)
+	orderHandler := handlers.NewOrderHandler(orderClient, appLogger)
 	projectHandler := handlers.NewProjectHandler(designClient, appLogger)
 	manufacturerHandler := handlers.NewManufacturerHandler(manufacturerClient, appLogger)
 	healthHandler := handlers.NewHealthHandler(authClient, userClient, cfg.Services.NotificationURL, appLogger)
@@ -95,7 +102,7 @@ func main() {
 	router.Use(middleware.SecurityHeaders(cfg.Environment))
 
 	// Setup routes
-	routes.SetupRoutes(router, authHandler, userHandler, searchHandler, rfqHandler, projectHandler, manufacturerHandler, healthHandler, authClient, redisClient, cfg)
+	routes.SetupRoutes(router, authHandler, userHandler, searchHandler, rfqHandler, projectHandler, manufacturerHandler, orderHandler, healthHandler, authClient, redisClient, cfg)
 
 	// Create HTTP server
 	server := &http.Server{
@@ -148,6 +155,9 @@ func main() {
 	}
 	if err := manufacturerClient.Close(); err != nil {
 		appLogger.Warn("Failed to close manufacturer client: " + err.Error())
+	}
+	if err := orderClient.Close(); err != nil {
+		appLogger.Warn("Failed to close order client: " + err.Error())
 	}
 
 	appLogger.Info("Server exited")

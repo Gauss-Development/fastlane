@@ -73,6 +73,12 @@ func (c *RFQClient) ListRFQs(ctx context.Context, buyerID, status string, limit,
 	})
 }
 
+func (c *RFQClient) ListOpenRFQs(ctx context.Context, limit, offset int32) (*rfqv1.ListRFQsResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, defaultRFQTimeout)
+	defer cancel()
+	return c.client.ListOpenRFQs(ctx, &rfqv1.ListOpenRFQsRequest{Limit: limit, Offset: offset})
+}
+
 func (c *RFQClient) ListQuotesForRFQ(ctx context.Context, rfqID, requestingUserID string) (*rfqv1.ListQuotesResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, defaultRFQTimeout)
 	defer cancel()
@@ -95,6 +101,30 @@ func (c *RFQClient) AddQuote(ctx context.Context, quote *rfqv1.Quote) (*rfqv1.Qu
 	ctx, cancel := context.WithTimeout(ctx, defaultRFQTimeout)
 	defer cancel()
 	return c.client.AddQuote(ctx, &rfqv1.AddQuoteRequest{Quote: quote})
+}
+
+func (c *RFQClient) SubmitManufacturerQuote(ctx context.Context, rfqID, manufacturerID, productID string, priceUSD float64, leadTimeDays int32, validityDate, notes string) (*rfqv1.Quote, error) {
+	ctx, cancel := context.WithTimeout(ctx, defaultRFQTimeout)
+	defer cancel()
+	return c.client.SubmitManufacturerQuote(ctx, &rfqv1.SubmitManufacturerQuoteRequest{
+		RfqId:          rfqID,
+		ManufacturerId: manufacturerID,
+		ProductId:      productID,
+		PriceUsd:       priceUSD,
+		LeadTimeDays:   leadTimeDays,
+		ValidityDate:   validityDate,
+		SupplierNotes:  notes,
+	})
+}
+
+func (c *RFQClient) AcceptQuote(ctx context.Context, rfqID, quoteID, actorID string) (*rfqv1.Quote, error) {
+	ctx, cancel := context.WithTimeout(ctx, defaultRFQTimeout)
+	defer cancel()
+	return c.client.AcceptQuote(ctx, &rfqv1.AcceptQuoteRequest{
+		RfqId:   rfqID,
+		QuoteId: quoteID,
+		ActorId: actorID,
+	})
 }
 
 func (c *RFQClient) HealthCheck(ctx context.Context) error {

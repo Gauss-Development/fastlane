@@ -29,7 +29,7 @@ type RabbitMQConfig struct {
 	URL            string
 	ExchangeName   string
 	QueueName      string
-	RoutingKey     string // comma-separated binding keys, e.g. "post.created,rfq.created,quote.submitted"
+	RoutingKey     string // comma-separated binding keys, e.g. "rfq.created,quote.submitted"
 	DLXName        string
 	DLQName        string
 	DLQRoutingKey  string
@@ -79,7 +79,7 @@ func Load() (*Config, error) {
 			URL:            getEnv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672/"),
 			ExchangeName:   getEnv("RABBITMQ_EXCHANGE", "blog_events"),
 			QueueName:      getEnv("RABBITMQ_QUEUE", "post_notifications"),
-			RoutingKey:     getEnv("RABBITMQ_ROUTING_KEY", "post.created,rfq.created,quote.submitted"),
+			RoutingKey:     getEnv("RABBITMQ_ROUTING_KEY", "rfq.created,quote.submitted"),
 			DLXName:        getEnv("RABBITMQ_DLX", "blog_events.dlx"),
 			DLQName:        getEnv("RABBITMQ_DLQ", "post_notifications_dlq"),
 			DLQRoutingKey:  getEnv("RABBITMQ_DLQ_ROUTING_KEY", "post.failed"),

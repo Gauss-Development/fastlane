@@ -11,6 +11,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countOpenRFQs = `-- name: CountOpenRFQs :one
+SELECT COUNT(*)::int FROM rfqs WHERE status = 'open'
+`
+
+func (q *Queries) CountOpenRFQs(ctx context.Context) (int32, error) {
+	row := q.db.QueryRow(ctx, countOpenRFQs)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const countRFQsByBuyer = `-- name: CountRFQsByBuyer :one
 SELECT COUNT(*)::int FROM rfqs
 WHERE buyer_id = $1
@@ -118,6 +129,53 @@ func (q *Queries) GetRFQByID(ctx context.Context, id string) (Rfq, error) {
 		&i.ProjectID,
 	)
 	return i, err
+}
+
+const listOpenRFQs = `-- name: ListOpenRFQs :many
+SELECT id, buyer_id, query_text, parsed_specs, matched_product_ids, status, qty, target_date, shipping_address, notes, created_at, buyer_email, buyer_company, project_id FROM rfqs
+WHERE status = 'open'
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type ListOpenRFQsParams struct {
+	Limit  int32 `db:"limit" json:"limit"`
+	Offset int32 `db:"offset" json:"offset"`
+}
+
+func (q *Queries) ListOpenRFQs(ctx context.Context, arg ListOpenRFQsParams) ([]Rfq, error) {
+	rows, err := q.db.Query(ctx, listOpenRFQs, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Rfq{}
+	for rows.Next() {
+		var i Rfq
+		if err := rows.Scan(
+			&i.ID,
+			&i.BuyerID,
+			&i.QueryText,
+			&i.ParsedSpecs,
+			&i.MatchedProductIds,
+			&i.Status,
+			&i.Qty,
+			&i.TargetDate,
+			&i.ShippingAddress,
+			&i.Notes,
+			&i.CreatedAt,
+			&i.BuyerEmail,
+			&i.BuyerCompany,
+			&i.ProjectID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listProductsByIDs = `-- name: ListProductsByIDs :many

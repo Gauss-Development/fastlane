@@ -44,6 +44,9 @@ func main() {
 	appLogger := logger.New(cfg.LogLevel)
 	metrics.Init()
 
+	appLogger.Info("transport security: " + cfg.ServiceTransportSecurity)
+	appLogger.Info("internal HTTP trust: " + cfg.InternalHTTPTrustMode)
+
 	db, err := postgres.NewConnection(cfg.Database)
 	if err != nil {
 		appLogger.Fatal("Failed to connect to database: " + err.Error())

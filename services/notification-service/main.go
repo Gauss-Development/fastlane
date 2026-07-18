@@ -59,12 +59,6 @@ func main() {
 
 	messageHanlder := func(routingKey string, body []byte) error {
 		switch routingKey {
-		case "post.created":
-			return notificationService.ProcessPostCreatedEvent(context.Background(), body)
-		case "post.updated":
-			return notificationService.ProcessPostUpdatedEvent(context.Background(), body)
-		case "post.deleted":
-			return notificationService.ProcessPostDeletedEvent(context.Background(), body)
 		case "rfq.created":
 			return rfqEmailService.ProcessRFQCreatedEvent(context.Background(), body)
 		case "quote.submitted":

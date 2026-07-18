@@ -11,10 +11,42 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const acceptQuote = `-- name: AcceptQuote :one
+UPDATE quotes SET status = 'accepted'
+WHERE id = $1 AND rfq_id = $2 AND status = 'submitted'
+RETURNING id, rfq_id, supplier_id, product_id, price_usd, lead_time_days, validity_date, supplier_notes, match_score, status, submitted_at, created_at, manufacturer_id
+`
+
+type AcceptQuoteParams struct {
+	ID    string `db:"id" json:"id"`
+	RfqID string `db:"rfq_id" json:"rfq_id"`
+}
+
+func (q *Queries) AcceptQuote(ctx context.Context, arg AcceptQuoteParams) (Quote, error) {
+	row := q.db.QueryRow(ctx, acceptQuote, arg.ID, arg.RfqID)
+	var i Quote
+	err := row.Scan(
+		&i.ID,
+		&i.RfqID,
+		&i.SupplierID,
+		&i.ProductID,
+		&i.PriceUsd,
+		&i.LeadTimeDays,
+		&i.ValidityDate,
+		&i.SupplierNotes,
+		&i.MatchScore,
+		&i.Status,
+		&i.SubmittedAt,
+		&i.CreatedAt,
+		&i.ManufacturerID,
+	)
+	return i, err
+}
+
 const createPendingQuote = `-- name: CreatePendingQuote :one
 INSERT INTO quotes (id, rfq_id, supplier_id, product_id, match_score, status)
 VALUES ($1, $2, $3, $4, $5, 'pending')
-RETURNING id, rfq_id, supplier_id, product_id, price_usd, lead_time_days, validity_date, supplier_notes, match_score, status, submitted_at, created_at
+RETURNING id, rfq_id, supplier_id, product_id, price_usd, lead_time_days, validity_date, supplier_notes, match_score, status, submitted_at, created_at, manufacturer_id
 `
 
 type CreatePendingQuoteParams struct {
@@ -47,12 +79,38 @@ func (q *Queries) CreatePendingQuote(ctx context.Context, arg CreatePendingQuote
 		&i.Status,
 		&i.SubmittedAt,
 		&i.CreatedAt,
+		&i.ManufacturerID,
+	)
+	return i, err
+}
+
+const getQuoteByID = `-- name: GetQuoteByID :one
+SELECT id, rfq_id, supplier_id, product_id, price_usd, lead_time_days, validity_date, supplier_notes, match_score, status, submitted_at, created_at, manufacturer_id FROM quotes WHERE id = $1
+`
+
+func (q *Queries) GetQuoteByID(ctx context.Context, id string) (Quote, error) {
+	row := q.db.QueryRow(ctx, getQuoteByID, id)
+	var i Quote
+	err := row.Scan(
+		&i.ID,
+		&i.RfqID,
+		&i.SupplierID,
+		&i.ProductID,
+		&i.PriceUsd,
+		&i.LeadTimeDays,
+		&i.ValidityDate,
+		&i.SupplierNotes,
+		&i.MatchScore,
+		&i.Status,
+		&i.SubmittedAt,
+		&i.CreatedAt,
+		&i.ManufacturerID,
 	)
 	return i, err
 }
 
 const getQuoteForSupplier = `-- name: GetQuoteForSupplier :one
-SELECT id, rfq_id, supplier_id, product_id, price_usd, lead_time_days, validity_date, supplier_notes, match_score, status, submitted_at, created_at FROM quotes
+SELECT id, rfq_id, supplier_id, product_id, price_usd, lead_time_days, validity_date, supplier_notes, match_score, status, submitted_at, created_at, manufacturer_id FROM quotes
 WHERE rfq_id = $1 AND supplier_id = $2
 ORDER BY created_at DESC
 LIMIT 1
@@ -79,12 +137,60 @@ func (q *Queries) GetQuoteForSupplier(ctx context.Context, arg GetQuoteForSuppli
 		&i.Status,
 		&i.SubmittedAt,
 		&i.CreatedAt,
+		&i.ManufacturerID,
+	)
+	return i, err
+}
+
+const insertManufacturerQuote = `-- name: InsertManufacturerQuote :one
+INSERT INTO quotes (id, rfq_id, manufacturer_id, product_id, price_usd, lead_time_days, validity_date, supplier_notes, status, submitted_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'submitted', now())
+RETURNING id, rfq_id, supplier_id, product_id, price_usd, lead_time_days, validity_date, supplier_notes, match_score, status, submitted_at, created_at, manufacturer_id
+`
+
+type InsertManufacturerQuoteParams struct {
+	ID             string         `db:"id" json:"id"`
+	RfqID          string         `db:"rfq_id" json:"rfq_id"`
+	ManufacturerID pgtype.UUID    `db:"manufacturer_id" json:"manufacturer_id"`
+	ProductID      pgtype.UUID    `db:"product_id" json:"product_id"`
+	PriceUsd       pgtype.Numeric `db:"price_usd" json:"price_usd"`
+	LeadTimeDays   *int32         `db:"lead_time_days" json:"lead_time_days"`
+	ValidityDate   pgtype.Date    `db:"validity_date" json:"validity_date"`
+	SupplierNotes  *string        `db:"supplier_notes" json:"supplier_notes"`
+}
+
+func (q *Queries) InsertManufacturerQuote(ctx context.Context, arg InsertManufacturerQuoteParams) (Quote, error) {
+	row := q.db.QueryRow(ctx, insertManufacturerQuote,
+		arg.ID,
+		arg.RfqID,
+		arg.ManufacturerID,
+		arg.ProductID,
+		arg.PriceUsd,
+		arg.LeadTimeDays,
+		arg.ValidityDate,
+		arg.SupplierNotes,
+	)
+	var i Quote
+	err := row.Scan(
+		&i.ID,
+		&i.RfqID,
+		&i.SupplierID,
+		&i.ProductID,
+		&i.PriceUsd,
+		&i.LeadTimeDays,
+		&i.ValidityDate,
+		&i.SupplierNotes,
+		&i.MatchScore,
+		&i.Status,
+		&i.SubmittedAt,
+		&i.CreatedAt,
+		&i.ManufacturerID,
 	)
 	return i, err
 }
 
 const listQuotesForRFQ = `-- name: ListQuotesForRFQ :many
-SELECT id, rfq_id, supplier_id, product_id, price_usd, lead_time_days, validity_date, supplier_notes, match_score, status, submitted_at, created_at FROM quotes
+SELECT id, rfq_id, supplier_id, product_id, price_usd, lead_time_days, validity_date, supplier_notes, match_score, status, submitted_at, created_at, manufacturer_id FROM quotes
 WHERE rfq_id = $1
 ORDER BY created_at ASC
 `
@@ -111,6 +217,7 @@ func (q *Queries) ListQuotesForRFQ(ctx context.Context, rfqID string) ([]Quote, 
 			&i.Status,
 			&i.SubmittedAt,
 			&i.CreatedAt,
+			&i.ManufacturerID,
 		); err != nil {
 			return nil, err
 		}
@@ -133,6 +240,21 @@ func (q *Queries) NextQuoteSeq(ctx context.Context) (int64, error) {
 	return column_1, err
 }
 
+const rejectOtherQuotes = `-- name: RejectOtherQuotes :exec
+UPDATE quotes SET status = 'rejected'
+WHERE rfq_id = $1 AND id <> $2 AND status IN ('pending', 'submitted')
+`
+
+type RejectOtherQuotesParams struct {
+	RfqID string `db:"rfq_id" json:"rfq_id"`
+	ID    string `db:"id" json:"id"`
+}
+
+func (q *Queries) RejectOtherQuotes(ctx context.Context, arg RejectOtherQuotesParams) error {
+	_, err := q.db.Exec(ctx, rejectOtherQuotes, arg.RfqID, arg.ID)
+	return err
+}
+
 const submitQuote = `-- name: SubmitQuote :one
 UPDATE quotes
 SET price_usd      = $3,
@@ -142,7 +264,7 @@ SET price_usd      = $3,
     status         = 'submitted',
     submitted_at   = now()
 WHERE rfq_id = $1 AND supplier_id = $2 AND status = 'pending'
-RETURNING id, rfq_id, supplier_id, product_id, price_usd, lead_time_days, validity_date, supplier_notes, match_score, status, submitted_at, created_at
+RETURNING id, rfq_id, supplier_id, product_id, price_usd, lead_time_days, validity_date, supplier_notes, match_score, status, submitted_at, created_at, manufacturer_id
 `
 
 type SubmitQuoteParams struct {
@@ -180,6 +302,7 @@ func (q *Queries) SubmitQuote(ctx context.Context, arg SubmitQuoteParams) (Quote
 		&i.Status,
 		&i.SubmittedAt,
 		&i.CreatedAt,
+		&i.ManufacturerID,
 	)
 	return i, err
 }

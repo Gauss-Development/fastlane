@@ -20,13 +20,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	RFQService_CreateRFQ_FullMethodName         = "/rfq.v1.RFQService/CreateRFQ"
-	RFQService_GetRFQ_FullMethodName            = "/rfq.v1.RFQService/GetRFQ"
-	RFQService_ListRFQs_FullMethodName          = "/rfq.v1.RFQService/ListRFQs"
-	RFQService_AddQuote_FullMethodName          = "/rfq.v1.RFQService/AddQuote"
-	RFQService_ListQuotesForRFQ_FullMethodName  = "/rfq.v1.RFQService/ListQuotesForRFQ"
-	RFQService_GetRFQForSupplier_FullMethodName = "/rfq.v1.RFQService/GetRFQForSupplier"
-	RFQService_HealthCheck_FullMethodName       = "/rfq.v1.RFQService/HealthCheck"
+	RFQService_CreateRFQ_FullMethodName               = "/rfq.v1.RFQService/CreateRFQ"
+	RFQService_GetRFQ_FullMethodName                  = "/rfq.v1.RFQService/GetRFQ"
+	RFQService_ListRFQs_FullMethodName                = "/rfq.v1.RFQService/ListRFQs"
+	RFQService_ListOpenRFQs_FullMethodName            = "/rfq.v1.RFQService/ListOpenRFQs"
+	RFQService_AddQuote_FullMethodName                = "/rfq.v1.RFQService/AddQuote"
+	RFQService_SubmitManufacturerQuote_FullMethodName = "/rfq.v1.RFQService/SubmitManufacturerQuote"
+	RFQService_AcceptQuote_FullMethodName             = "/rfq.v1.RFQService/AcceptQuote"
+	RFQService_ListQuotesForRFQ_FullMethodName        = "/rfq.v1.RFQService/ListQuotesForRFQ"
+	RFQService_GetRFQForSupplier_FullMethodName       = "/rfq.v1.RFQService/GetRFQForSupplier"
+	RFQService_HealthCheck_FullMethodName             = "/rfq.v1.RFQService/HealthCheck"
 )
 
 // RFQServiceClient is the client API for RFQService service.
@@ -36,7 +39,10 @@ type RFQServiceClient interface {
 	CreateRFQ(ctx context.Context, in *CreateRFQRequest, opts ...grpc.CallOption) (*RFQ, error)
 	GetRFQ(ctx context.Context, in *GetRFQRequest, opts ...grpc.CallOption) (*RFQ, error)
 	ListRFQs(ctx context.Context, in *ListRFQsRequest, opts ...grpc.CallOption) (*ListRFQsResponse, error)
+	ListOpenRFQs(ctx context.Context, in *ListOpenRFQsRequest, opts ...grpc.CallOption) (*ListRFQsResponse, error)
 	AddQuote(ctx context.Context, in *AddQuoteRequest, opts ...grpc.CallOption) (*Quote, error)
+	SubmitManufacturerQuote(ctx context.Context, in *SubmitManufacturerQuoteRequest, opts ...grpc.CallOption) (*Quote, error)
+	AcceptQuote(ctx context.Context, in *AcceptQuoteRequest, opts ...grpc.CallOption) (*Quote, error)
 	ListQuotesForRFQ(ctx context.Context, in *ListQuotesForRFQRequest, opts ...grpc.CallOption) (*ListQuotesResponse, error)
 	GetRFQForSupplier(ctx context.Context, in *GetRFQForSupplierRequest, opts ...grpc.CallOption) (*SupplierRFQView, error)
 	HealthCheck(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
@@ -80,10 +86,40 @@ func (c *rFQServiceClient) ListRFQs(ctx context.Context, in *ListRFQsRequest, op
 	return out, nil
 }
 
+func (c *rFQServiceClient) ListOpenRFQs(ctx context.Context, in *ListOpenRFQsRequest, opts ...grpc.CallOption) (*ListRFQsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListRFQsResponse)
+	err := c.cc.Invoke(ctx, RFQService_ListOpenRFQs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *rFQServiceClient) AddQuote(ctx context.Context, in *AddQuoteRequest, opts ...grpc.CallOption) (*Quote, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Quote)
 	err := c.cc.Invoke(ctx, RFQService_AddQuote_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *rFQServiceClient) SubmitManufacturerQuote(ctx context.Context, in *SubmitManufacturerQuoteRequest, opts ...grpc.CallOption) (*Quote, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Quote)
+	err := c.cc.Invoke(ctx, RFQService_SubmitManufacturerQuote_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *rFQServiceClient) AcceptQuote(ctx context.Context, in *AcceptQuoteRequest, opts ...grpc.CallOption) (*Quote, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Quote)
+	err := c.cc.Invoke(ctx, RFQService_AcceptQuote_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +163,10 @@ type RFQServiceServer interface {
 	CreateRFQ(context.Context, *CreateRFQRequest) (*RFQ, error)
 	GetRFQ(context.Context, *GetRFQRequest) (*RFQ, error)
 	ListRFQs(context.Context, *ListRFQsRequest) (*ListRFQsResponse, error)
+	ListOpenRFQs(context.Context, *ListOpenRFQsRequest) (*ListRFQsResponse, error)
 	AddQuote(context.Context, *AddQuoteRequest) (*Quote, error)
+	SubmitManufacturerQuote(context.Context, *SubmitManufacturerQuoteRequest) (*Quote, error)
+	AcceptQuote(context.Context, *AcceptQuoteRequest) (*Quote, error)
 	ListQuotesForRFQ(context.Context, *ListQuotesForRFQRequest) (*ListQuotesResponse, error)
 	GetRFQForSupplier(context.Context, *GetRFQForSupplierRequest) (*SupplierRFQView, error)
 	HealthCheck(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
@@ -150,8 +189,17 @@ func (UnimplementedRFQServiceServer) GetRFQ(context.Context, *GetRFQRequest) (*R
 func (UnimplementedRFQServiceServer) ListRFQs(context.Context, *ListRFQsRequest) (*ListRFQsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListRFQs not implemented")
 }
+func (UnimplementedRFQServiceServer) ListOpenRFQs(context.Context, *ListOpenRFQsRequest) (*ListRFQsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListOpenRFQs not implemented")
+}
 func (UnimplementedRFQServiceServer) AddQuote(context.Context, *AddQuoteRequest) (*Quote, error) {
 	return nil, status.Error(codes.Unimplemented, "method AddQuote not implemented")
+}
+func (UnimplementedRFQServiceServer) SubmitManufacturerQuote(context.Context, *SubmitManufacturerQuoteRequest) (*Quote, error) {
+	return nil, status.Error(codes.Unimplemented, "method SubmitManufacturerQuote not implemented")
+}
+func (UnimplementedRFQServiceServer) AcceptQuote(context.Context, *AcceptQuoteRequest) (*Quote, error) {
+	return nil, status.Error(codes.Unimplemented, "method AcceptQuote not implemented")
 }
 func (UnimplementedRFQServiceServer) ListQuotesForRFQ(context.Context, *ListQuotesForRFQRequest) (*ListQuotesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListQuotesForRFQ not implemented")
@@ -237,6 +285,24 @@ func _RFQService_ListRFQs_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RFQService_ListOpenRFQs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListOpenRFQsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RFQServiceServer).ListOpenRFQs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RFQService_ListOpenRFQs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RFQServiceServer).ListOpenRFQs(ctx, req.(*ListOpenRFQsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RFQService_AddQuote_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AddQuoteRequest)
 	if err := dec(in); err != nil {
@@ -251,6 +317,42 @@ func _RFQService_AddQuote_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RFQServiceServer).AddQuote(ctx, req.(*AddQuoteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RFQService_SubmitManufacturerQuote_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SubmitManufacturerQuoteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RFQServiceServer).SubmitManufacturerQuote(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RFQService_SubmitManufacturerQuote_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RFQServiceServer).SubmitManufacturerQuote(ctx, req.(*SubmitManufacturerQuoteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RFQService_AcceptQuote_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AcceptQuoteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RFQServiceServer).AcceptQuote(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RFQService_AcceptQuote_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RFQServiceServer).AcceptQuote(ctx, req.(*AcceptQuoteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -329,8 +431,20 @@ var RFQService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RFQService_ListRFQs_Handler,
 		},
 		{
+			MethodName: "ListOpenRFQs",
+			Handler:    _RFQService_ListOpenRFQs_Handler,
+		},
+		{
 			MethodName: "AddQuote",
 			Handler:    _RFQService_AddQuote_Handler,
+		},
+		{
+			MethodName: "SubmitManufacturerQuote",
+			Handler:    _RFQService_SubmitManufacturerQuote_Handler,
+		},
+		{
+			MethodName: "AcceptQuote",
+			Handler:    _RFQService_AcceptQuote_Handler,
 		},
 		{
 			MethodName: "ListQuotesForRFQ",

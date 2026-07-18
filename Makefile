@@ -8,7 +8,7 @@ SVC ?=
 # Optional command for exec/run helpers
 CMD ?= sh
 
-SERVICES := api-gateway auth-service user-service post-service search-service notification-service design-service catalog-service
+SERVICES := api-gateway auth-service user-service post-service search-service notification-service design-service catalog-service order-service
 
 .PHONY: help setup compose up up-d down down-v stop start restart build build-no-cache pull push \
 	ps top images config logs logs-f logs-svc shell exec run \
@@ -105,16 +105,16 @@ run: ## Run one-off command in new service container (SVC=..., CMD='...')
 	$(DC) run --rm $(SVC) $(CMD)
 
 infra-up: ## Start infrastructure only (redis, postgres, rabbitmq, minio, prometheus, grafana)
-	$(DC) up -d redis postgres_user postgres_post postgres_notification postgres_design postgres_catalog rabbitmq minio createbuckets prometheus grafana
+	$(DC) up -d redis postgres_user postgres_post postgres_notification postgres_design postgres_catalog postgres_order rabbitmq minio createbuckets prometheus grafana
 
 infra-down: ## Stop infrastructure only
-	$(DC) stop redis postgres_user postgres_post postgres_notification postgres_design postgres_catalog rabbitmq minio prometheus grafana
+	$(DC) stop redis postgres_user postgres_post postgres_notification postgres_design postgres_catalog postgres_order rabbitmq minio prometheus grafana
 
 app-up: ## Start app services only (without infra)
-	$(DC) up -d auth-service user-service post-service notification-service search-service design-service catalog-service api-gateway
+	$(DC) up -d auth-service user-service post-service notification-service search-service design-service catalog-service order-service api-gateway
 
 app-down: ## Stop app services only
-	$(DC) stop auth-service user-service post-service notification-service search-service design-service catalog-service api-gateway
+	$(DC) stop auth-service user-service post-service notification-service search-service design-service catalog-service order-service api-gateway
 
 clean: ## Compose down + remove volumes
 	$(DC) down -v --remove-orphans

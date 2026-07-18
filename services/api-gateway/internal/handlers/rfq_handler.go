@@ -17,6 +17,7 @@ import (
 	"api-gateway/pkg/utils"
 
 	authv1 "github.com/nikitashilov/microblog_grpc/proto/auth/v1"
+	manufacturerv1 "github.com/nikitashilov/microblog_grpc/proto/manufacturer/v1"
 	rfqv1 "github.com/nikitashilov/microblog_grpc/proto/rfq/v1"
 )
 
@@ -25,9 +26,12 @@ type RFQClientAPI interface {
 	CreateRFQ(ctx context.Context, rfq *rfqv1.RFQ) (*rfqv1.RFQ, error)
 	GetRFQ(ctx context.Context, id, requestingUserID string) (*rfqv1.RFQ, error)
 	ListRFQs(ctx context.Context, buyerID, status string, limit, offset int32) (*rfqv1.ListRFQsResponse, error)
+	ListOpenRFQs(ctx context.Context, limit, offset int32) (*rfqv1.ListRFQsResponse, error)
 	ListQuotesForRFQ(ctx context.Context, rfqID, requestingUserID string) (*rfqv1.ListQuotesResponse, error)
 	GetRFQForSupplier(ctx context.Context, rfqID, supplierID string) (*rfqv1.SupplierRFQView, error)
 	AddQuote(ctx context.Context, quote *rfqv1.Quote) (*rfqv1.Quote, error)
+	SubmitManufacturerQuote(ctx context.Context, rfqID, manufacturerID, productID string, priceUSD float64, leadTimeDays int32, validityDate, notes string) (*rfqv1.Quote, error)
+	AcceptQuote(ctx context.Context, rfqID, quoteID, actorID string) (*rfqv1.Quote, error)
 }
 
 // MagicLinkValidator is the slice of AuthClient the supplier endpoints need.
@@ -35,14 +39,20 @@ type MagicLinkValidator interface {
 	ValidateMagicLinkToken(ctx context.Context, token string) (*authv1.ValidateMagicLinkTokenResponse, error)
 }
 
-type RFQHandler struct {
-	rfqClient  RFQClientAPI
-	magicLinks MagicLinkValidator
-	logger     *logger.Logger
+// ManufacturerResolver is the slice of ManufacturerClient the RFQ handler needs.
+type ManufacturerResolver interface {
+	GetManufacturerByUser(ctx context.Context, userID string) (*manufacturerv1.Manufacturer, error)
 }
 
-func NewRFQHandler(rfqClient RFQClientAPI, magicLinks MagicLinkValidator, logger *logger.Logger) *RFQHandler {
-	return &RFQHandler{rfqClient: rfqClient, magicLinks: magicLinks, logger: logger}
+type RFQHandler struct {
+	rfqClient    RFQClientAPI
+	magicLinks   MagicLinkValidator
+	manufacturers ManufacturerResolver
+	logger       *logger.Logger
+}
+
+func NewRFQHandler(rfqClient RFQClientAPI, magicLinks MagicLinkValidator, manufacturers ManufacturerResolver, logger *logger.Logger) *RFQHandler {
+	return &RFQHandler{rfqClient: rfqClient, magicLinks: magicLinks, manufacturers: manufacturers, logger: logger}
 }
 
 type createRFQBody struct {
@@ -159,6 +169,30 @@ func (h *RFQHandler) ListRFQs(c *gin.Context) {
 	})
 }
 
+// ListOpenRFQs handles GET /api/v1/manufacturer-rfqs — the manufacturer board
+// of open quote requests. Role is enforced at the route; no buyer filter.
+func (h *RFQHandler) ListOpenRFQs(c *gin.Context) {
+	limit := parseQueryInt(c, "limit", 20, 1, 100)
+	offset := parseQueryInt(c, "offset", 0, 0, 1<<30)
+
+	resp, err := h.rfqClient.ListOpenRFQs(c.Request.Context(), limit, offset)
+	if err != nil {
+		h.handleRFQError(c, err, "LIST_RFQS_FAILED", "Failed to list open RFQs")
+		return
+	}
+
+	rfqs := make([]map[string]interface{}, 0, len(resp.GetRfqs()))
+	for _, rfq := range resp.GetRfqs() {
+		rfqs = append(rfqs, rfqToMap(rfq, false))
+	}
+	utils.SuccessResponse(c, http.StatusOK, "Open RFQs retrieved successfully", map[string]interface{}{
+		"rfqs":   rfqs,
+		"total":  resp.GetTotal(),
+		"limit":  limit,
+		"offset": offset,
+	})
+}
+
 // ListQuotes handles GET /api/v1/rfqs/:id/quotes.
 func (h *RFQHandler) ListQuotes(c *gin.Context) {
 	userID, exists := c.Get("userID")
@@ -243,6 +277,79 @@ func (h *RFQHandler) SupplierSubmitQuote(c *gin.Context) {
 	}
 
 	utils.SuccessResponse(c, http.StatusCreated, "Quote submitted successfully", quoteToMap(quote))
+}
+
+type manufacturerQuoteBody struct {
+	PriceUSD     float64 `json:"price_usd"`
+	LeadTimeDays int32   `json:"lead_time_days"`
+	ValidityDate string  `json:"validity_date"`
+	Notes        string  `json:"notes"`
+	ProductID    string  `json:"product_id"`
+}
+
+// ManufacturerSubmitQuote handles POST /api/v1/manufacturer-rfqs/:id/quote.
+// Role "manufacturer" is enforced at the route; here we resolve the manufacturer
+// profile from the authenticated user.
+func (h *RFQHandler) ManufacturerSubmitQuote(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required")
+		return
+	}
+
+	m, err := h.manufacturers.GetManufacturerByUser(c.Request.Context(), userID.(string))
+	if err != nil {
+		if st, ok := status.FromError(err); ok && st.Code() == codes.NotFound {
+			utils.ErrorResponse(c, http.StatusForbidden, "NO_MANUFACTURER_PROFILE", "No manufacturer profile found for your account")
+			return
+		}
+		h.handleRFQError(c, err, "RESOLVE_MANUFACTURER_FAILED", "Failed to resolve manufacturer profile")
+		return
+	}
+
+	var body manufacturerQuoteBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "INVALID_BODY", "Request body must be valid JSON")
+		return
+	}
+	if body.PriceUSD <= 0 || body.LeadTimeDays <= 0 {
+		utils.ErrorResponse(c, http.StatusBadRequest, "INVALID_QUOTE", "price_usd and lead_time_days must be positive")
+		return
+	}
+
+	quote, err := h.rfqClient.SubmitManufacturerQuote(
+		c.Request.Context(),
+		c.Param("id"),
+		m.GetId(),
+		body.ProductID,
+		body.PriceUSD,
+		body.LeadTimeDays,
+		body.ValidityDate,
+		body.Notes,
+	)
+	if err != nil {
+		h.handleRFQError(c, err, "SUBMIT_QUOTE_FAILED", "Failed to submit quote")
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusCreated, "Quote submitted successfully", quoteToMap(quote))
+}
+
+// AcceptQuote handles POST /api/v1/rfqs/:id/quotes/:quoteId/accept.
+func (h *RFQHandler) AcceptQuote(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required")
+		return
+	}
+
+	quote, err := h.rfqClient.AcceptQuote(c.Request.Context(), c.Param("id"), c.Param("quoteId"), userID.(string))
+	if err != nil {
+		h.handleRFQError(c, err, "ACCEPT_QUOTE_FAILED", "Failed to accept quote")
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Quote accepted successfully", quoteToMap(quote))
 }
 
 func (h *RFQHandler) resolveMagicLink(c *gin.Context) (*authv1.ValidateMagicLinkTokenResponse, bool) {

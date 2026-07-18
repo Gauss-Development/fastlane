@@ -1,8 +1,3 @@
-DROP INDEX IF EXISTS idx_order_events_event_type;
-DROP INDEX IF EXISTS idx_order_events_order_occurred;
-DROP INDEX IF EXISTS idx_orders_status;
-DROP INDEX IF EXISTS idx_orders_supplier_created;
-DROP INDEX IF EXISTS idx_orders_buyer_created;
 DROP INDEX IF EXISTS idx_quotes_status;
 DROP INDEX IF EXISTS idx_quotes_supplier_id;
 DROP INDEX IF EXISTS idx_quotes_rfq_id;

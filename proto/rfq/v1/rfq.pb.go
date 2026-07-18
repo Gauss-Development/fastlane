@@ -173,21 +173,22 @@ func (x *RFQ) GetProjectId() string {
 }
 
 type Quote struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"` // QUOTE-YYYYMMDD-NNNN-SZX
-	RfqId         string                 `protobuf:"bytes,2,opt,name=rfq_id,json=rfqId,proto3" json:"rfq_id,omitempty"`
-	SupplierId    string                 `protobuf:"bytes,3,opt,name=supplier_id,json=supplierId,proto3" json:"supplier_id,omitempty"`
-	ProductId     string                 `protobuf:"bytes,4,opt,name=product_id,json=productId,proto3" json:"product_id,omitempty"` // optional
-	PriceUsd      float64                `protobuf:"fixed64,5,opt,name=price_usd,json=priceUsd,proto3" json:"price_usd,omitempty"`
-	LeadTimeDays  int32                  `protobuf:"varint,6,opt,name=lead_time_days,json=leadTimeDays,proto3" json:"lead_time_days,omitempty"`
-	ValidityDate  string                 `protobuf:"bytes,7,opt,name=validity_date,json=validityDate,proto3" json:"validity_date,omitempty"` // ISO-8601 date
-	SupplierNotes string                 `protobuf:"bytes,8,opt,name=supplier_notes,json=supplierNotes,proto3" json:"supplier_notes,omitempty"`
-	MatchScore    int32                  `protobuf:"varint,9,opt,name=match_score,json=matchScore,proto3" json:"match_score,omitempty"` // 0..100, AI-generated
-	Status        string                 `protobuf:"bytes,10,opt,name=status,proto3" json:"status,omitempty"`                           // pending | submitted | accepted | rejected
-	SubmittedAt   *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=submitted_at,json=submittedAt,proto3" json:"submitted_at,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"` // QUOTE-YYYYMMDD-NNNN-SZX
+	RfqId          string                 `protobuf:"bytes,2,opt,name=rfq_id,json=rfqId,proto3" json:"rfq_id,omitempty"`
+	SupplierId     string                 `protobuf:"bytes,3,opt,name=supplier_id,json=supplierId,proto3" json:"supplier_id,omitempty"`
+	ProductId      string                 `protobuf:"bytes,4,opt,name=product_id,json=productId,proto3" json:"product_id,omitempty"` // optional
+	PriceUsd       float64                `protobuf:"fixed64,5,opt,name=price_usd,json=priceUsd,proto3" json:"price_usd,omitempty"`
+	LeadTimeDays   int32                  `protobuf:"varint,6,opt,name=lead_time_days,json=leadTimeDays,proto3" json:"lead_time_days,omitempty"`
+	ValidityDate   string                 `protobuf:"bytes,7,opt,name=validity_date,json=validityDate,proto3" json:"validity_date,omitempty"` // ISO-8601 date
+	SupplierNotes  string                 `protobuf:"bytes,8,opt,name=supplier_notes,json=supplierNotes,proto3" json:"supplier_notes,omitempty"`
+	MatchScore     int32                  `protobuf:"varint,9,opt,name=match_score,json=matchScore,proto3" json:"match_score,omitempty"` // 0..100, AI-generated
+	Status         string                 `protobuf:"bytes,10,opt,name=status,proto3" json:"status,omitempty"`                           // pending | submitted | accepted | rejected
+	SubmittedAt    *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=submitted_at,json=submittedAt,proto3" json:"submitted_at,omitempty"`
+	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	ManufacturerId string                 `protobuf:"bytes,13,opt,name=manufacturer_id,json=manufacturerId,proto3" json:"manufacturer_id,omitempty"` // set when a logged-in manufacturer quotes; supplier_id blank then
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *Quote) Reset() {
@@ -302,6 +303,13 @@ func (x *Quote) GetCreatedAt() *timestamppb.Timestamp {
 		return x.CreatedAt
 	}
 	return nil
+}
+
+func (x *Quote) GetManufacturerId() string {
+	if x != nil {
+		return x.ManufacturerId
+	}
+	return ""
 }
 
 type CreateRFQRequest struct {
@@ -520,6 +528,61 @@ func (x *ListRFQsResponse) GetTotal() int32 {
 	return 0
 }
 
+// ListOpenRFQs is the manufacturer-facing board of open quote requests. No
+// buyer filter: any authenticated manufacturer sees all open RFQs. Buyer email
+// and shipping address are blanked server-side (see ListRFQsResponse reuse).
+type ListOpenRFQsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Limit         int32                  `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
+	Offset        int32                  `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListOpenRFQsRequest) Reset() {
+	*x = ListOpenRFQsRequest{}
+	mi := &file_rfq_v1_rfq_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListOpenRFQsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListOpenRFQsRequest) ProtoMessage() {}
+
+func (x *ListOpenRFQsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_rfq_v1_rfq_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListOpenRFQsRequest.ProtoReflect.Descriptor instead.
+func (*ListOpenRFQsRequest) Descriptor() ([]byte, []int) {
+	return file_rfq_v1_rfq_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ListOpenRFQsRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ListOpenRFQsRequest) GetOffset() int32 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
 type AddQuoteRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Quote         *Quote                 `protobuf:"bytes,1,opt,name=quote,proto3" json:"quote,omitempty"`
@@ -529,7 +592,7 @@ type AddQuoteRequest struct {
 
 func (x *AddQuoteRequest) Reset() {
 	*x = AddQuoteRequest{}
-	mi := &file_rfq_v1_rfq_proto_msgTypes[6]
+	mi := &file_rfq_v1_rfq_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -541,7 +604,7 @@ func (x *AddQuoteRequest) String() string {
 func (*AddQuoteRequest) ProtoMessage() {}
 
 func (x *AddQuoteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rfq_v1_rfq_proto_msgTypes[6]
+	mi := &file_rfq_v1_rfq_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -554,7 +617,7 @@ func (x *AddQuoteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddQuoteRequest.ProtoReflect.Descriptor instead.
 func (*AddQuoteRequest) Descriptor() ([]byte, []int) {
-	return file_rfq_v1_rfq_proto_rawDescGZIP(), []int{6}
+	return file_rfq_v1_rfq_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *AddQuoteRequest) GetQuote() *Quote {
@@ -562,6 +625,164 @@ func (x *AddQuoteRequest) GetQuote() *Quote {
 		return x.Quote
 	}
 	return nil
+}
+
+// SubmitManufacturerQuote is the logged-in manufacturer path: no pre-created
+// pending row and no magic-link. The gateway resolves manufacturer_id from the
+// authenticated user before calling; the service inserts a fresh quote.
+type SubmitManufacturerQuoteRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	RfqId          string                 `protobuf:"bytes,1,opt,name=rfq_id,json=rfqId,proto3" json:"rfq_id,omitempty"`
+	ManufacturerId string                 `protobuf:"bytes,2,opt,name=manufacturer_id,json=manufacturerId,proto3" json:"manufacturer_id,omitempty"`
+	ProductId      string                 `protobuf:"bytes,3,opt,name=product_id,json=productId,proto3" json:"product_id,omitempty"` // optional
+	PriceUsd       float64                `protobuf:"fixed64,4,opt,name=price_usd,json=priceUsd,proto3" json:"price_usd,omitempty"`
+	LeadTimeDays   int32                  `protobuf:"varint,5,opt,name=lead_time_days,json=leadTimeDays,proto3" json:"lead_time_days,omitempty"`
+	ValidityDate   string                 `protobuf:"bytes,6,opt,name=validity_date,json=validityDate,proto3" json:"validity_date,omitempty"` // ISO-8601 date
+	SupplierNotes  string                 `protobuf:"bytes,7,opt,name=supplier_notes,json=supplierNotes,proto3" json:"supplier_notes,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *SubmitManufacturerQuoteRequest) Reset() {
+	*x = SubmitManufacturerQuoteRequest{}
+	mi := &file_rfq_v1_rfq_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SubmitManufacturerQuoteRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubmitManufacturerQuoteRequest) ProtoMessage() {}
+
+func (x *SubmitManufacturerQuoteRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_rfq_v1_rfq_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubmitManufacturerQuoteRequest.ProtoReflect.Descriptor instead.
+func (*SubmitManufacturerQuoteRequest) Descriptor() ([]byte, []int) {
+	return file_rfq_v1_rfq_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *SubmitManufacturerQuoteRequest) GetRfqId() string {
+	if x != nil {
+		return x.RfqId
+	}
+	return ""
+}
+
+func (x *SubmitManufacturerQuoteRequest) GetManufacturerId() string {
+	if x != nil {
+		return x.ManufacturerId
+	}
+	return ""
+}
+
+func (x *SubmitManufacturerQuoteRequest) GetProductId() string {
+	if x != nil {
+		return x.ProductId
+	}
+	return ""
+}
+
+func (x *SubmitManufacturerQuoteRequest) GetPriceUsd() float64 {
+	if x != nil {
+		return x.PriceUsd
+	}
+	return 0
+}
+
+func (x *SubmitManufacturerQuoteRequest) GetLeadTimeDays() int32 {
+	if x != nil {
+		return x.LeadTimeDays
+	}
+	return 0
+}
+
+func (x *SubmitManufacturerQuoteRequest) GetValidityDate() string {
+	if x != nil {
+		return x.ValidityDate
+	}
+	return ""
+}
+
+func (x *SubmitManufacturerQuoteRequest) GetSupplierNotes() string {
+	if x != nil {
+		return x.SupplierNotes
+	}
+	return ""
+}
+
+// AcceptQuote is the buyer accepting one quote on their RFQ. The service
+// enforces buyer ownership (actor_id == rfq.buyer_id), flips the RFQ + quote to
+// accepted, and publishes quote.accepted so order-service creates the order.
+type AcceptQuoteRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RfqId         string                 `protobuf:"bytes,1,opt,name=rfq_id,json=rfqId,proto3" json:"rfq_id,omitempty"`
+	QuoteId       string                 `protobuf:"bytes,2,opt,name=quote_id,json=quoteId,proto3" json:"quote_id,omitempty"`
+	ActorId       string                 `protobuf:"bytes,3,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"` // gateway-passed buyer id
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AcceptQuoteRequest) Reset() {
+	*x = AcceptQuoteRequest{}
+	mi := &file_rfq_v1_rfq_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AcceptQuoteRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AcceptQuoteRequest) ProtoMessage() {}
+
+func (x *AcceptQuoteRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_rfq_v1_rfq_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AcceptQuoteRequest.ProtoReflect.Descriptor instead.
+func (*AcceptQuoteRequest) Descriptor() ([]byte, []int) {
+	return file_rfq_v1_rfq_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *AcceptQuoteRequest) GetRfqId() string {
+	if x != nil {
+		return x.RfqId
+	}
+	return ""
+}
+
+func (x *AcceptQuoteRequest) GetQuoteId() string {
+	if x != nil {
+		return x.QuoteId
+	}
+	return ""
+}
+
+func (x *AcceptQuoteRequest) GetActorId() string {
+	if x != nil {
+		return x.ActorId
+	}
+	return ""
 }
 
 type ListQuotesForRFQRequest struct {
@@ -574,7 +795,7 @@ type ListQuotesForRFQRequest struct {
 
 func (x *ListQuotesForRFQRequest) Reset() {
 	*x = ListQuotesForRFQRequest{}
-	mi := &file_rfq_v1_rfq_proto_msgTypes[7]
+	mi := &file_rfq_v1_rfq_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -586,7 +807,7 @@ func (x *ListQuotesForRFQRequest) String() string {
 func (*ListQuotesForRFQRequest) ProtoMessage() {}
 
 func (x *ListQuotesForRFQRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rfq_v1_rfq_proto_msgTypes[7]
+	mi := &file_rfq_v1_rfq_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -599,7 +820,7 @@ func (x *ListQuotesForRFQRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListQuotesForRFQRequest.ProtoReflect.Descriptor instead.
 func (*ListQuotesForRFQRequest) Descriptor() ([]byte, []int) {
-	return file_rfq_v1_rfq_proto_rawDescGZIP(), []int{7}
+	return file_rfq_v1_rfq_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ListQuotesForRFQRequest) GetRfqId() string {
@@ -625,7 +846,7 @@ type ListQuotesResponse struct {
 
 func (x *ListQuotesResponse) Reset() {
 	*x = ListQuotesResponse{}
-	mi := &file_rfq_v1_rfq_proto_msgTypes[8]
+	mi := &file_rfq_v1_rfq_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -637,7 +858,7 @@ func (x *ListQuotesResponse) String() string {
 func (*ListQuotesResponse) ProtoMessage() {}
 
 func (x *ListQuotesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rfq_v1_rfq_proto_msgTypes[8]
+	mi := &file_rfq_v1_rfq_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -650,7 +871,7 @@ func (x *ListQuotesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListQuotesResponse.ProtoReflect.Descriptor instead.
 func (*ListQuotesResponse) Descriptor() ([]byte, []int) {
-	return file_rfq_v1_rfq_proto_rawDescGZIP(), []int{8}
+	return file_rfq_v1_rfq_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ListQuotesResponse) GetQuotes() []*Quote {
@@ -673,7 +894,7 @@ type GetRFQForSupplierRequest struct {
 
 func (x *GetRFQForSupplierRequest) Reset() {
 	*x = GetRFQForSupplierRequest{}
-	mi := &file_rfq_v1_rfq_proto_msgTypes[9]
+	mi := &file_rfq_v1_rfq_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -685,7 +906,7 @@ func (x *GetRFQForSupplierRequest) String() string {
 func (*GetRFQForSupplierRequest) ProtoMessage() {}
 
 func (x *GetRFQForSupplierRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rfq_v1_rfq_proto_msgTypes[9]
+	mi := &file_rfq_v1_rfq_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -698,7 +919,7 @@ func (x *GetRFQForSupplierRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRFQForSupplierRequest.ProtoReflect.Descriptor instead.
 func (*GetRFQForSupplierRequest) Descriptor() ([]byte, []int) {
-	return file_rfq_v1_rfq_proto_rawDescGZIP(), []int{9}
+	return file_rfq_v1_rfq_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GetRFQForSupplierRequest) GetRfqId() string {
@@ -726,7 +947,7 @@ type SupplierRFQView struct {
 
 func (x *SupplierRFQView) Reset() {
 	*x = SupplierRFQView{}
-	mi := &file_rfq_v1_rfq_proto_msgTypes[10]
+	mi := &file_rfq_v1_rfq_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -738,7 +959,7 @@ func (x *SupplierRFQView) String() string {
 func (*SupplierRFQView) ProtoMessage() {}
 
 func (x *SupplierRFQView) ProtoReflect() protoreflect.Message {
-	mi := &file_rfq_v1_rfq_proto_msgTypes[10]
+	mi := &file_rfq_v1_rfq_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -751,7 +972,7 @@ func (x *SupplierRFQView) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SupplierRFQView.ProtoReflect.Descriptor instead.
 func (*SupplierRFQView) Descriptor() ([]byte, []int) {
-	return file_rfq_v1_rfq_proto_rawDescGZIP(), []int{10}
+	return file_rfq_v1_rfq_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *SupplierRFQView) GetRfq() *RFQ {
@@ -800,7 +1021,7 @@ const file_rfq_v1_rfq_proto_rawDesc = "" +
 	"buyerEmail\x12#\n" +
 	"\rbuyer_company\x18\r \x01(\tR\fbuyerCompany\x12\x1d\n" +
 	"\n" +
-	"project_id\x18\x0e \x01(\tR\tprojectId\"\xb0\x03\n" +
+	"project_id\x18\x0e \x01(\tR\tprojectId\"\xd9\x03\n" +
 	"\x05Quote\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x15\n" +
 	"\x06rfq_id\x18\x02 \x01(\tR\x05rfqId\x12\x1f\n" +
@@ -818,7 +1039,8 @@ const file_rfq_v1_rfq_proto_rawDesc = "" +
 	" \x01(\tR\x06status\x12=\n" +
 	"\fsubmitted_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vsubmittedAt\x129\n" +
 	"\n" +
-	"created_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"1\n" +
+	"created_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12'\n" +
+	"\x0fmanufacturer_id\x18\r \x01(\tR\x0emanufacturerId\"1\n" +
 	"\x10CreateRFQRequest\x12\x1d\n" +
 	"\x03rfq\x18\x01 \x01(\v2\v.rfq.v1.RFQR\x03rfq\"M\n" +
 	"\rGetRFQRequest\x12\x0e\n" +
@@ -831,9 +1053,25 @@ const file_rfq_v1_rfq_proto_rawDesc = "" +
 	"\x06status\x18\x04 \x01(\tR\x06status\"I\n" +
 	"\x10ListRFQsResponse\x12\x1f\n" +
 	"\x04rfqs\x18\x01 \x03(\v2\v.rfq.v1.RFQR\x04rfqs\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x05R\x05total\"6\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\"C\n" +
+	"\x13ListOpenRFQsRequest\x12\x14\n" +
+	"\x05limit\x18\x01 \x01(\x05R\x05limit\x12\x16\n" +
+	"\x06offset\x18\x02 \x01(\x05R\x06offset\"6\n" +
 	"\x0fAddQuoteRequest\x12#\n" +
-	"\x05quote\x18\x01 \x01(\v2\r.rfq.v1.QuoteR\x05quote\"^\n" +
+	"\x05quote\x18\x01 \x01(\v2\r.rfq.v1.QuoteR\x05quote\"\x8e\x02\n" +
+	"\x1eSubmitManufacturerQuoteRequest\x12\x15\n" +
+	"\x06rfq_id\x18\x01 \x01(\tR\x05rfqId\x12'\n" +
+	"\x0fmanufacturer_id\x18\x02 \x01(\tR\x0emanufacturerId\x12\x1d\n" +
+	"\n" +
+	"product_id\x18\x03 \x01(\tR\tproductId\x12\x1b\n" +
+	"\tprice_usd\x18\x04 \x01(\x01R\bpriceUsd\x12$\n" +
+	"\x0elead_time_days\x18\x05 \x01(\x05R\fleadTimeDays\x12#\n" +
+	"\rvalidity_date\x18\x06 \x01(\tR\fvalidityDate\x12%\n" +
+	"\x0esupplier_notes\x18\a \x01(\tR\rsupplierNotes\"a\n" +
+	"\x12AcceptQuoteRequest\x12\x15\n" +
+	"\x06rfq_id\x18\x01 \x01(\tR\x05rfqId\x12\x19\n" +
+	"\bquote_id\x18\x02 \x01(\tR\aquoteId\x12\x19\n" +
+	"\bactor_id\x18\x03 \x01(\tR\aactorId\"^\n" +
 	"\x17ListQuotesForRFQRequest\x12\x15\n" +
 	"\x06rfq_id\x18\x01 \x01(\tR\x05rfqId\x12,\n" +
 	"\x12requesting_user_id\x18\x02 \x01(\tR\x10requestingUserId\";\n" +
@@ -846,13 +1084,16 @@ const file_rfq_v1_rfq_proto_rawDesc = "" +
 	"\x0fSupplierRFQView\x12\x1d\n" +
 	"\x03rfq\x18\x01 \x01(\v2\v.rfq.v1.RFQR\x03rfq\x12#\n" +
 	"\x05quote\x18\x02 \x01(\v2\r.rfq.v1.QuoteR\x05quote\x12#\n" +
-	"\rsupplier_name\x18\x03 \x01(\tR\fsupplierName2\xc1\x03\n" +
+	"\rsupplier_name\x18\x03 \x01(\tR\fsupplierName2\x94\x05\n" +
 	"\n" +
 	"RFQService\x122\n" +
 	"\tCreateRFQ\x12\x18.rfq.v1.CreateRFQRequest\x1a\v.rfq.v1.RFQ\x12,\n" +
 	"\x06GetRFQ\x12\x15.rfq.v1.GetRFQRequest\x1a\v.rfq.v1.RFQ\x12=\n" +
-	"\bListRFQs\x12\x17.rfq.v1.ListRFQsRequest\x1a\x18.rfq.v1.ListRFQsResponse\x122\n" +
-	"\bAddQuote\x12\x17.rfq.v1.AddQuoteRequest\x1a\r.rfq.v1.Quote\x12O\n" +
+	"\bListRFQs\x12\x17.rfq.v1.ListRFQsRequest\x1a\x18.rfq.v1.ListRFQsResponse\x12E\n" +
+	"\fListOpenRFQs\x12\x1b.rfq.v1.ListOpenRFQsRequest\x1a\x18.rfq.v1.ListRFQsResponse\x122\n" +
+	"\bAddQuote\x12\x17.rfq.v1.AddQuoteRequest\x1a\r.rfq.v1.Quote\x12P\n" +
+	"\x17SubmitManufacturerQuote\x12&.rfq.v1.SubmitManufacturerQuoteRequest\x1a\r.rfq.v1.Quote\x128\n" +
+	"\vAcceptQuote\x12\x1a.rfq.v1.AcceptQuoteRequest\x1a\r.rfq.v1.Quote\x12O\n" +
 	"\x10ListQuotesForRFQ\x12\x1f.rfq.v1.ListQuotesForRFQRequest\x1a\x1a.rfq.v1.ListQuotesResponse\x12N\n" +
 	"\x11GetRFQForSupplier\x12 .rfq.v1.GetRFQForSupplierRequest\x1a\x17.rfq.v1.SupplierRFQView\x12=\n" +
 	"\vHealthCheck\x12\x16.google.protobuf.Empty\x1a\x16.google.protobuf.EmptyB;Z9github.com/nikitashilov/microblog_grpc/proto/rfq/v1;rfqv1b\x06proto3"
@@ -869,28 +1110,31 @@ func file_rfq_v1_rfq_proto_rawDescGZIP() []byte {
 	return file_rfq_v1_rfq_proto_rawDescData
 }
 
-var file_rfq_v1_rfq_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_rfq_v1_rfq_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_rfq_v1_rfq_proto_goTypes = []any{
-	(*RFQ)(nil),                      // 0: rfq.v1.RFQ
-	(*Quote)(nil),                    // 1: rfq.v1.Quote
-	(*CreateRFQRequest)(nil),         // 2: rfq.v1.CreateRFQRequest
-	(*GetRFQRequest)(nil),            // 3: rfq.v1.GetRFQRequest
-	(*ListRFQsRequest)(nil),          // 4: rfq.v1.ListRFQsRequest
-	(*ListRFQsResponse)(nil),         // 5: rfq.v1.ListRFQsResponse
-	(*AddQuoteRequest)(nil),          // 6: rfq.v1.AddQuoteRequest
-	(*ListQuotesForRFQRequest)(nil),  // 7: rfq.v1.ListQuotesForRFQRequest
-	(*ListQuotesResponse)(nil),       // 8: rfq.v1.ListQuotesResponse
-	(*GetRFQForSupplierRequest)(nil), // 9: rfq.v1.GetRFQForSupplierRequest
-	(*SupplierRFQView)(nil),          // 10: rfq.v1.SupplierRFQView
-	(*structpb.Struct)(nil),          // 11: google.protobuf.Struct
-	(*timestamppb.Timestamp)(nil),    // 12: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),            // 13: google.protobuf.Empty
+	(*RFQ)(nil),                            // 0: rfq.v1.RFQ
+	(*Quote)(nil),                          // 1: rfq.v1.Quote
+	(*CreateRFQRequest)(nil),               // 2: rfq.v1.CreateRFQRequest
+	(*GetRFQRequest)(nil),                  // 3: rfq.v1.GetRFQRequest
+	(*ListRFQsRequest)(nil),                // 4: rfq.v1.ListRFQsRequest
+	(*ListRFQsResponse)(nil),               // 5: rfq.v1.ListRFQsResponse
+	(*ListOpenRFQsRequest)(nil),            // 6: rfq.v1.ListOpenRFQsRequest
+	(*AddQuoteRequest)(nil),                // 7: rfq.v1.AddQuoteRequest
+	(*SubmitManufacturerQuoteRequest)(nil), // 8: rfq.v1.SubmitManufacturerQuoteRequest
+	(*AcceptQuoteRequest)(nil),             // 9: rfq.v1.AcceptQuoteRequest
+	(*ListQuotesForRFQRequest)(nil),        // 10: rfq.v1.ListQuotesForRFQRequest
+	(*ListQuotesResponse)(nil),             // 11: rfq.v1.ListQuotesResponse
+	(*GetRFQForSupplierRequest)(nil),       // 12: rfq.v1.GetRFQForSupplierRequest
+	(*SupplierRFQView)(nil),                // 13: rfq.v1.SupplierRFQView
+	(*structpb.Struct)(nil),                // 14: google.protobuf.Struct
+	(*timestamppb.Timestamp)(nil),          // 15: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),                  // 16: google.protobuf.Empty
 }
 var file_rfq_v1_rfq_proto_depIdxs = []int32{
-	11, // 0: rfq.v1.RFQ.parsed_specs:type_name -> google.protobuf.Struct
-	12, // 1: rfq.v1.RFQ.created_at:type_name -> google.protobuf.Timestamp
-	12, // 2: rfq.v1.Quote.submitted_at:type_name -> google.protobuf.Timestamp
-	12, // 3: rfq.v1.Quote.created_at:type_name -> google.protobuf.Timestamp
+	14, // 0: rfq.v1.RFQ.parsed_specs:type_name -> google.protobuf.Struct
+	15, // 1: rfq.v1.RFQ.created_at:type_name -> google.protobuf.Timestamp
+	15, // 2: rfq.v1.Quote.submitted_at:type_name -> google.protobuf.Timestamp
+	15, // 3: rfq.v1.Quote.created_at:type_name -> google.protobuf.Timestamp
 	0,  // 4: rfq.v1.CreateRFQRequest.rfq:type_name -> rfq.v1.RFQ
 	0,  // 5: rfq.v1.ListRFQsResponse.rfqs:type_name -> rfq.v1.RFQ
 	1,  // 6: rfq.v1.AddQuoteRequest.quote:type_name -> rfq.v1.Quote
@@ -900,19 +1144,25 @@ var file_rfq_v1_rfq_proto_depIdxs = []int32{
 	2,  // 10: rfq.v1.RFQService.CreateRFQ:input_type -> rfq.v1.CreateRFQRequest
 	3,  // 11: rfq.v1.RFQService.GetRFQ:input_type -> rfq.v1.GetRFQRequest
 	4,  // 12: rfq.v1.RFQService.ListRFQs:input_type -> rfq.v1.ListRFQsRequest
-	6,  // 13: rfq.v1.RFQService.AddQuote:input_type -> rfq.v1.AddQuoteRequest
-	7,  // 14: rfq.v1.RFQService.ListQuotesForRFQ:input_type -> rfq.v1.ListQuotesForRFQRequest
-	9,  // 15: rfq.v1.RFQService.GetRFQForSupplier:input_type -> rfq.v1.GetRFQForSupplierRequest
-	13, // 16: rfq.v1.RFQService.HealthCheck:input_type -> google.protobuf.Empty
-	0,  // 17: rfq.v1.RFQService.CreateRFQ:output_type -> rfq.v1.RFQ
-	0,  // 18: rfq.v1.RFQService.GetRFQ:output_type -> rfq.v1.RFQ
-	5,  // 19: rfq.v1.RFQService.ListRFQs:output_type -> rfq.v1.ListRFQsResponse
-	1,  // 20: rfq.v1.RFQService.AddQuote:output_type -> rfq.v1.Quote
-	8,  // 21: rfq.v1.RFQService.ListQuotesForRFQ:output_type -> rfq.v1.ListQuotesResponse
-	10, // 22: rfq.v1.RFQService.GetRFQForSupplier:output_type -> rfq.v1.SupplierRFQView
-	13, // 23: rfq.v1.RFQService.HealthCheck:output_type -> google.protobuf.Empty
-	17, // [17:24] is the sub-list for method output_type
-	10, // [10:17] is the sub-list for method input_type
+	6,  // 13: rfq.v1.RFQService.ListOpenRFQs:input_type -> rfq.v1.ListOpenRFQsRequest
+	7,  // 14: rfq.v1.RFQService.AddQuote:input_type -> rfq.v1.AddQuoteRequest
+	8,  // 15: rfq.v1.RFQService.SubmitManufacturerQuote:input_type -> rfq.v1.SubmitManufacturerQuoteRequest
+	9,  // 16: rfq.v1.RFQService.AcceptQuote:input_type -> rfq.v1.AcceptQuoteRequest
+	10, // 17: rfq.v1.RFQService.ListQuotesForRFQ:input_type -> rfq.v1.ListQuotesForRFQRequest
+	12, // 18: rfq.v1.RFQService.GetRFQForSupplier:input_type -> rfq.v1.GetRFQForSupplierRequest
+	16, // 19: rfq.v1.RFQService.HealthCheck:input_type -> google.protobuf.Empty
+	0,  // 20: rfq.v1.RFQService.CreateRFQ:output_type -> rfq.v1.RFQ
+	0,  // 21: rfq.v1.RFQService.GetRFQ:output_type -> rfq.v1.RFQ
+	5,  // 22: rfq.v1.RFQService.ListRFQs:output_type -> rfq.v1.ListRFQsResponse
+	5,  // 23: rfq.v1.RFQService.ListOpenRFQs:output_type -> rfq.v1.ListRFQsResponse
+	1,  // 24: rfq.v1.RFQService.AddQuote:output_type -> rfq.v1.Quote
+	1,  // 25: rfq.v1.RFQService.SubmitManufacturerQuote:output_type -> rfq.v1.Quote
+	1,  // 26: rfq.v1.RFQService.AcceptQuote:output_type -> rfq.v1.Quote
+	11, // 27: rfq.v1.RFQService.ListQuotesForRFQ:output_type -> rfq.v1.ListQuotesResponse
+	13, // 28: rfq.v1.RFQService.GetRFQForSupplier:output_type -> rfq.v1.SupplierRFQView
+	16, // 29: rfq.v1.RFQService.HealthCheck:output_type -> google.protobuf.Empty
+	20, // [20:30] is the sub-list for method output_type
+	10, // [10:20] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name
 	10, // [10:10] is the sub-list for extension extendee
 	0,  // [0:10] is the sub-list for field type_name
@@ -929,7 +1179,7 @@ func file_rfq_v1_rfq_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_rfq_v1_rfq_proto_rawDesc), len(file_rfq_v1_rfq_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

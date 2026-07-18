@@ -30,6 +30,7 @@ type MagicLinkIssuer interface {
 type RFQEventPublisher interface {
 	PublishRFQCreated(event messaging.RFQCreatedEvent) error
 	PublishQuoteSubmitted(event messaging.QuoteSubmittedEvent) error
+	PublishQuoteAccepted(event messaging.QuoteAcceptedEvent) error
 }
 
 type RFQService struct {
@@ -215,6 +216,34 @@ func (s *RFQService) ListRFQs(ctx context.Context, req *dto.ListRFQsRequest) ([]
 	return rfqs, total, nil
 }
 
+// ListOpenRFQs is the manufacturer board: every open RFQ, newest first. Buyer
+// email and shipping address are blanked — a broadcast surface shows demand,
+// not the buyer's contact or delivery point (those follow an accepted quote).
+func (s *RFQService) ListOpenRFQs(ctx context.Context, limit, offset int32) ([]*entities.RFQ, int32, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	rfqs, err := s.repo.ListOpenRFQs(ctx, limit, offset)
+	if err != nil {
+		s.logger.Error("rfq: list open: " + err.Error())
+		return nil, 0, appErrors.ErrServiceUnavailable
+	}
+	for _, rfq := range rfqs {
+		rfq.BuyerEmail = ""
+		rfq.ShippingAddress = ""
+	}
+	total, err := s.repo.CountOpenRFQs(ctx)
+	if err != nil {
+		s.logger.Error("rfq: count open: " + err.Error())
+		return nil, 0, appErrors.ErrServiceUnavailable
+	}
+	return rfqs, total, nil
+}
+
 // ListQuotesForRFQ enforces buyer ownership before exposing quotes.
 func (s *RFQService) ListQuotesForRFQ(ctx context.Context, rfqID, requestingUserID string) ([]*entities.Quote, error) {
 	if _, err := s.GetRFQ(ctx, rfqID, requestingUserID); err != nil {
@@ -340,6 +369,143 @@ func (s *RFQService) publishRFQCreated(rfq *entities.RFQ, productBySupplier map[
 	if err := s.eventPublisher.PublishRFQCreated(event); err != nil {
 		s.logger.Error("rfq: publish rfq.created: " + err.Error())
 	}
+}
+
+// SubmitManufacturerQuote handles the logged-in manufacturer path: no pre-created
+// pending row. Inserts a fresh submitted quote and marks the RFQ quoted.
+func (s *RFQService) SubmitManufacturerQuote(ctx context.Context, req *dto.SubmitManufacturerQuoteRequest) (*entities.Quote, error) {
+	if req.RFQID == "" || req.ManufacturerID == "" || req.PriceUSD <= 0 || req.LeadTimeDays <= 0 {
+		return nil, appErrors.ErrInvalidRequest
+	}
+
+	rfq, err := s.repo.GetRFQByID(ctx, req.RFQID)
+	if err != nil {
+		if errors.Is(err, postgres.ErrNoRows) {
+			return nil, appErrors.ErrRFQNotFound
+		}
+		s.logger.Error("rfq: manufacturer quote get rfq: " + err.Error())
+		return nil, appErrors.ErrServiceUnavailable
+	}
+	if rfq.Status == entities.RFQStatusAccepted || rfq.Status == entities.RFQStatusClosed {
+		return nil, appErrors.ErrInvalidRequest
+	}
+
+	quoteID, err := s.nextID(ctx, "QUOTE", s.repo.NextQuoteSeq)
+	if err != nil {
+		s.logger.Error("rfq: manufacturer quote allocate id: " + err.Error())
+		return nil, appErrors.ErrServiceUnavailable
+	}
+
+	quote, err := s.repo.InsertManufacturerQuote(ctx, &entities.Quote{
+		ID:             quoteID,
+		RFQID:          req.RFQID,
+		ManufacturerID: req.ManufacturerID,
+		ProductID:      req.ProductID,
+		PriceUSD:       req.PriceUSD,
+		LeadTimeDays:   req.LeadTimeDays,
+		ValidityDate:   req.ValidityDate,
+		SupplierNotes:  req.SupplierNotes,
+	})
+	if err != nil {
+		s.logger.Error("rfq: manufacturer quote insert: " + err.Error())
+		return nil, appErrors.ErrServiceUnavailable
+	}
+
+	if _, err := s.repo.UpdateRFQStatus(ctx, req.RFQID, entities.RFQStatusQuoted); err != nil {
+		s.logger.Error("rfq: manufacturer quote mark rfq quoted: " + err.Error())
+	}
+
+	if s.eventPublisher != nil {
+		event := messaging.QuoteSubmittedEvent{
+			QuoteID:      quote.ID,
+			RFQID:        quote.RFQID,
+			BuyerID:      rfq.BuyerID,
+			BuyerEmail:   rfq.BuyerEmail,
+			BuyerCompany: rfq.BuyerCompany,
+			QueryText:    rfq.QueryText,
+			SupplierID:   "", // manufacturer path; no seed supplier
+			PriceUSD:     quote.PriceUSD,
+			LeadTimeDays: quote.LeadTimeDays,
+			SubmittedAt:  quote.SubmittedAt,
+		}
+		if pubErr := s.eventPublisher.PublishQuoteSubmitted(event); pubErr != nil {
+			s.logger.Error("rfq: publish quote.submitted (manufacturer): " + pubErr.Error())
+		}
+	}
+
+	return quote, nil
+}
+
+// AcceptQuote lets the buyer accept one quote, flipping statuses and publishing
+// quote.accepted for order-service to consume.
+func (s *RFQService) AcceptQuote(ctx context.Context, rfqID, quoteID, actorID string) (*entities.Quote, error) {
+	if rfqID == "" || quoteID == "" || actorID == "" {
+		return nil, appErrors.ErrInvalidRequest
+	}
+
+	rfq, err := s.repo.GetRFQByID(ctx, rfqID)
+	if err != nil {
+		if errors.Is(err, postgres.ErrNoRows) {
+			return nil, appErrors.ErrRFQNotFound
+		}
+		s.logger.Error("rfq: accept quote get rfq: " + err.Error())
+		return nil, appErrors.ErrServiceUnavailable
+	}
+	if rfq.BuyerID != actorID {
+		return nil, appErrors.ErrUnauthorizedAccess
+	}
+
+	quote, err := s.repo.GetQuoteByID(ctx, quoteID)
+	if err != nil {
+		if errors.Is(err, postgres.ErrNoRows) {
+			return nil, appErrors.ErrQuoteNotFound
+		}
+		s.logger.Error("rfq: accept quote get quote: " + err.Error())
+		return nil, appErrors.ErrServiceUnavailable
+	}
+	if quote.RFQID != rfqID || quote.Status != entities.QuoteStatusSubmitted {
+		return nil, appErrors.ErrInvalidRequest
+	}
+
+	accepted, err := s.repo.AcceptQuote(ctx, quoteID, rfqID)
+	if err != nil {
+		if errors.Is(err, postgres.ErrNoRows) {
+			return nil, appErrors.ErrInvalidRequest
+		}
+		s.logger.Error("rfq: accept quote update: " + err.Error())
+		return nil, appErrors.ErrServiceUnavailable
+	}
+
+	if err := s.repo.RejectOtherQuotes(ctx, rfqID, quoteID); err != nil {
+		s.logger.Error("rfq: reject other quotes: " + err.Error())
+	}
+
+	if _, err := s.repo.UpdateRFQStatus(ctx, rfqID, entities.RFQStatusAccepted); err != nil {
+		s.logger.Error("rfq: accept quote mark rfq accepted: " + err.Error())
+	}
+
+	if s.eventPublisher != nil {
+		event := messaging.QuoteAcceptedEvent{
+			RFQID:           rfqID,
+			QuoteID:         quoteID,
+			BuyerID:         rfq.BuyerID,
+			BuyerEmail:      rfq.BuyerEmail,
+			BuyerCompany:    rfq.BuyerCompany,
+			QueryText:       rfq.QueryText,
+			SupplierID:      accepted.SupplierID,
+			ManufacturerID:  accepted.ManufacturerID,
+			ProductID:       accepted.ProductID,
+			PriceUSD:        accepted.PriceUSD,
+			Qty:             rfq.Qty,
+			ShippingAddress: rfq.ShippingAddress,
+			AcceptedAt:      s.now(),
+		}
+		if pubErr := s.eventPublisher.PublishQuoteAccepted(event); pubErr != nil {
+			s.logger.Error("rfq: publish quote.accepted: " + pubErr.Error())
+		}
+	}
+
+	return accepted, nil
 }
 
 // nextID formats RFQ-YYYYMMDD-NNNN-SZX / QUOTE-YYYYMMDD-NNNN-SZX. NNNN comes

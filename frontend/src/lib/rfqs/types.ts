@@ -24,6 +24,7 @@ export interface Quote {
   id: string;
   rfq_id: string;
   supplier_id: string;
+  manufacturer_id?: string;
   product_id: string;
   price_usd: number;
   lead_time_days: number;
@@ -33,6 +34,14 @@ export interface Quote {
   status: QuoteStatus;
   submitted_at: string;
   created_at: string;
+}
+
+export interface SubmitManufacturerQuoteParams {
+  price_usd: number;
+  lead_time_days: number;
+  validity_date: string;
+  notes: string;
+  product_id?: string;
 }
 
 export interface CreateRFQParams {

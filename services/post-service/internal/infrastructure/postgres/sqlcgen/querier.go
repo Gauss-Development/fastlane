@@ -11,6 +11,8 @@ import (
 )
 
 type Querier interface {
+	AcceptQuote(ctx context.Context, arg AcceptQuoteParams) (Quote, error)
+	CountOpenRFQs(ctx context.Context) (int32, error)
 	CountRFQsByBuyer(ctx context.Context, arg CountRFQsByBuyerParams) (int32, error)
 	CountSuppliers(ctx context.Context, arg CountSuppliersParams) (int32, error)
 	CreatePendingQuote(ctx context.Context, arg CreatePendingQuoteParams) (Quote, error)
@@ -19,10 +21,13 @@ type Querier interface {
 	CreateSupplier(ctx context.Context, arg CreateSupplierParams) (Supplier, error)
 	GetProductByID(ctx context.Context, id pgtype.UUID) (Product, error)
 	GetProductBySupplierSKU(ctx context.Context, arg GetProductBySupplierSKUParams) (Product, error)
+	GetQuoteByID(ctx context.Context, id string) (Quote, error)
 	GetQuoteForSupplier(ctx context.Context, arg GetQuoteForSupplierParams) (Quote, error)
 	GetRFQByID(ctx context.Context, id string) (Rfq, error)
 	GetSupplierByID(ctx context.Context, id pgtype.UUID) (Supplier, error)
 	GetSupplierByName(ctx context.Context, name string) (Supplier, error)
+	InsertManufacturerQuote(ctx context.Context, arg InsertManufacturerQuoteParams) (Quote, error)
+	ListOpenRFQs(ctx context.Context, arg ListOpenRFQsParams) ([]Rfq, error)
 	ListProductsByIDs(ctx context.Context, dollar_1 []pgtype.UUID) ([]ListProductsByIDsRow, error)
 	ListProductsBySupplier(ctx context.Context, arg ListProductsBySupplierParams) ([]Product, error)
 	// Used by cmd/embed CLI to find products that still need an embedding.
@@ -36,6 +41,7 @@ type Querier interface {
 	ListSuppliersByIDs(ctx context.Context, dollar_1 []pgtype.UUID) ([]ListSuppliersByIDsRow, error)
 	NextQuoteSeq(ctx context.Context) (int64, error)
 	NextRFQSeq(ctx context.Context) (int64, error)
+	RejectOtherQuotes(ctx context.Context, arg RejectOtherQuotesParams) error
 	// The pending row was created with the RFQ; submission fills in commercial
 	// terms. Guarding on status = 'pending' makes re-submission a no-rows error
 	// instead of silently overwriting an accepted/rejected quote.

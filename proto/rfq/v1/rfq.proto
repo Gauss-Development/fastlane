@@ -38,6 +38,7 @@ message Quote {
   string status          = 10;  // pending | submitted | accepted | rejected
   google.protobuf.Timestamp submitted_at = 11;
   google.protobuf.Timestamp created_at   = 12;
+  string manufacturer_id = 13;  // set when a logged-in manufacturer quotes; supplier_id blank then
 }
 
 message CreateRFQRequest {
@@ -61,8 +62,38 @@ message ListRFQsResponse {
   int32 total = 2;
 }
 
+// ListOpenRFQs is the manufacturer-facing board of open quote requests. No
+// buyer filter: any authenticated manufacturer sees all open RFQs. Buyer email
+// and shipping address are blanked server-side (see ListRFQsResponse reuse).
+message ListOpenRFQsRequest {
+  int32 limit  = 1;
+  int32 offset = 2;
+}
+
 message AddQuoteRequest {
   Quote quote = 1;
+}
+
+// SubmitManufacturerQuote is the logged-in manufacturer path: no pre-created
+// pending row and no magic-link. The gateway resolves manufacturer_id from the
+// authenticated user before calling; the service inserts a fresh quote.
+message SubmitManufacturerQuoteRequest {
+  string rfq_id          = 1;
+  string manufacturer_id = 2;
+  string product_id      = 3;   // optional
+  double price_usd       = 4;
+  int32  lead_time_days  = 5;
+  string validity_date   = 6;   // ISO-8601 date
+  string supplier_notes  = 7;
+}
+
+// AcceptQuote is the buyer accepting one quote on their RFQ. The service
+// enforces buyer ownership (actor_id == rfq.buyer_id), flips the RFQ + quote to
+// accepted, and publishes quote.accepted so order-service creates the order.
+message AcceptQuoteRequest {
+  string rfq_id   = 1;
+  string quote_id = 2;
+  string actor_id = 3;   // gateway-passed buyer id
 }
 
 message ListQuotesForRFQRequest {
@@ -92,7 +123,10 @@ service RFQService {
   rpc CreateRFQ(CreateRFQRequest)                  returns (RFQ);
   rpc GetRFQ(GetRFQRequest)                        returns (RFQ);
   rpc ListRFQs(ListRFQsRequest)                    returns (ListRFQsResponse);
+  rpc ListOpenRFQs(ListOpenRFQsRequest)            returns (ListRFQsResponse);
   rpc AddQuote(AddQuoteRequest)                    returns (Quote);
+  rpc SubmitManufacturerQuote(SubmitManufacturerQuoteRequest) returns (Quote);
+  rpc AcceptQuote(AcceptQuoteRequest)              returns (Quote);
   rpc ListQuotesForRFQ(ListQuotesForRFQRequest)    returns (ListQuotesResponse);
   rpc GetRFQForSupplier(GetRFQForSupplierRequest)  returns (SupplierRFQView);
   rpc HealthCheck(google.protobuf.Empty)           returns (google.protobuf.Empty);

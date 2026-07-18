@@ -93,6 +93,18 @@ func (s *RFQServer) ListRFQs(ctx context.Context, req *rfqv1.ListRFQsRequest) (*
 	return &rfqv1.ListRFQsResponse{Rfqs: out, Total: total}, nil
 }
 
+func (s *RFQServer) ListOpenRFQs(ctx context.Context, req *rfqv1.ListOpenRFQsRequest) (*rfqv1.ListRFQsResponse, error) {
+	rfqs, total, err := s.service.ListOpenRFQs(ctx, req.GetLimit(), req.GetOffset())
+	if err != nil {
+		return nil, s.toGRPCError(err)
+	}
+	out := make([]*rfqv1.RFQ, 0, len(rfqs))
+	for _, rfq := range rfqs {
+		out = append(out, toProtoRFQ(rfq))
+	}
+	return &rfqv1.ListRFQsResponse{Rfqs: out, Total: total}, nil
+}
+
 // AddQuote is the supplier quote submission: the gateway resolves the magic
 // link token to (rfq_id, supplier_id) and the service updates the pending row.
 func (s *RFQServer) AddQuote(ctx context.Context, req *rfqv1.AddQuoteRequest) (*rfqv1.Quote, error) {
@@ -207,22 +219,53 @@ func toTimestamp(t time.Time) *timestamppb.Timestamp {
 	return timestamppb.New(t)
 }
 
+func (s *RFQServer) SubmitManufacturerQuote(ctx context.Context, req *rfqv1.SubmitManufacturerQuoteRequest) (*rfqv1.Quote, error) {
+	if req.GetRfqId() == "" || req.GetManufacturerId() == "" {
+		return nil, status.Error(codes.InvalidArgument, appErrors.ErrInvalidRequest.Message)
+	}
+	quote, err := s.service.SubmitManufacturerQuote(ctx, &dto.SubmitManufacturerQuoteRequest{
+		RFQID:          req.GetRfqId(),
+		ManufacturerID: req.GetManufacturerId(),
+		ProductID:      req.GetProductId(),
+		PriceUSD:       req.GetPriceUsd(),
+		LeadTimeDays:   req.GetLeadTimeDays(),
+		ValidityDate:   req.GetValidityDate(),
+		SupplierNotes:  req.GetSupplierNotes(),
+	})
+	if err != nil {
+		return nil, s.toGRPCError(err)
+	}
+	return toProtoQuote(quote), nil
+}
+
+func (s *RFQServer) AcceptQuote(ctx context.Context, req *rfqv1.AcceptQuoteRequest) (*rfqv1.Quote, error) {
+	if req.GetRfqId() == "" || req.GetQuoteId() == "" || req.GetActorId() == "" {
+		return nil, status.Error(codes.InvalidArgument, appErrors.ErrInvalidRequest.Message)
+	}
+	quote, err := s.service.AcceptQuote(ctx, req.GetRfqId(), req.GetQuoteId(), req.GetActorId())
+	if err != nil {
+		return nil, s.toGRPCError(err)
+	}
+	return toProtoQuote(quote), nil
+}
+
 func toProtoQuote(quote *entities.Quote) *rfqv1.Quote {
 	if quote == nil {
 		return nil
 	}
 	return &rfqv1.Quote{
-		Id:            quote.ID,
-		RfqId:         quote.RFQID,
-		SupplierId:    quote.SupplierID,
-		ProductId:     quote.ProductID,
-		PriceUsd:      quote.PriceUSD,
-		LeadTimeDays:  quote.LeadTimeDays,
-		ValidityDate:  quote.ValidityDate,
-		SupplierNotes: quote.SupplierNotes,
-		MatchScore:    quote.MatchScore,
-		Status:        quote.Status,
-		SubmittedAt:   toTimestamp(quote.SubmittedAt),
-		CreatedAt:     toTimestamp(quote.CreatedAt),
+		Id:             quote.ID,
+		RfqId:          quote.RFQID,
+		SupplierId:     quote.SupplierID,
+		ManufacturerId: quote.ManufacturerID,
+		ProductId:      quote.ProductID,
+		PriceUsd:       quote.PriceUSD,
+		LeadTimeDays:   quote.LeadTimeDays,
+		ValidityDate:   quote.ValidityDate,
+		SupplierNotes:  quote.SupplierNotes,
+		MatchScore:     quote.MatchScore,
+		Status:         quote.Status,
+		SubmittedAt:    toTimestamp(quote.SubmittedAt),
+		CreatedAt:      toTimestamp(quote.CreatedAt),
 	}
 }

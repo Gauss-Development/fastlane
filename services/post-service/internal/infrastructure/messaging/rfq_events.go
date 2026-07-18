@@ -44,10 +44,30 @@ type QuoteSubmittedEvent struct {
 	SubmittedAt  time.Time `json:"submitted_at"`
 }
 
+type QuoteAcceptedEvent struct {
+	RFQID           string    `json:"rfq_id"`
+	QuoteID         string    `json:"quote_id"`
+	BuyerID         string    `json:"buyer_id"`
+	BuyerEmail      string    `json:"buyer_email"`
+	BuyerCompany    string    `json:"buyer_company"`
+	QueryText       string    `json:"query_text"`
+	SupplierID      string    `json:"supplier_id"`      // set for seed-supplier quotes; "" for manufacturer quotes
+	ManufacturerID  string    `json:"manufacturer_id"`  // set for manufacturer quotes; "" otherwise
+	ProductID       string    `json:"product_id"`
+	PriceUSD        float64   `json:"price_usd"`
+	Qty             int32     `json:"qty"`
+	ShippingAddress string    `json:"shipping_address"`
+	AcceptedAt      time.Time `json:"accepted_at"`
+}
+
 func (p *EventPublisher) PublishRFQCreated(event RFQCreatedEvent) error {
 	return p.publishEvent("rfq.created", event)
 }
 
 func (p *EventPublisher) PublishQuoteSubmitted(event QuoteSubmittedEvent) error {
 	return p.publishEvent("quote.submitted", event)
+}
+
+func (p *EventPublisher) PublishQuoteAccepted(event QuoteAcceptedEvent) error {
+	return p.publishEvent("quote.accepted", event)
 }

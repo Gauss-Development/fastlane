@@ -31,3 +31,13 @@ type SubmitQuoteRequest struct {
 	ValidityDate  string  `json:"validity_date"`
 	SupplierNotes string  `json:"supplier_notes"`
 }
+
+type SubmitManufacturerQuoteRequest struct {
+	RFQID          string  `json:"rfq_id"`
+	ManufacturerID string  `json:"manufacturer_id"`
+	ProductID      string  `json:"product_id"`
+	PriceUSD       float64 `json:"price_usd"`
+	LeadTimeDays   int32   `json:"lead_time_days"`
+	ValidityDate   string  `json:"validity_date"`
+	SupplierNotes  string  `json:"supplier_notes"`
+}

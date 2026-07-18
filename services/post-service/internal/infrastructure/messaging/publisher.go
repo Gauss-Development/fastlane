@@ -17,31 +17,6 @@ type EventPublisher struct {
 	logger       *logger.Logger
 }
 
-type PostCreatedEvent struct {
-	PostID    string    `json:"post_id"`
-	UserID    string    `json:"user_id"`
-	Title     string    `json:"title"`
-	Slug      string    `json:"slug"`
-	Published bool      `json:"published"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-type PostUpdatedEvent struct {
-	PostID    string    `json:"post_id"`
-	UserID    string    `json:"user_id"`
-	Title     string    `json:"title"`
-	Slug      string    `json:"slug"`
-	Published bool      `json:"published"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-type PostDeletedEvent struct {
-	PostID    string    `json:"post_id"`
-	UserID    string    `json:"user_id"`
-	Title     string    `json:"title"`
-	DeletedAt time.Time `json:"deleted_at"`
-}
-
 func NewEventPublisher(rabbitMQURL, exchangeName string, logger *logger.Logger) (*EventPublisher, error) {
 	conn, err := amqp.Dial(rabbitMQURL)
 	if err != nil {
@@ -82,18 +57,6 @@ func NewEventPublisher(rabbitMQURL, exchangeName string, logger *logger.Logger) 
 
 	logger.Info("Event publisher initialized successfully")
 	return publisher, nil
-}
-
-func (p *EventPublisher) PublishPostCreated(event PostCreatedEvent) error {
-	return p.publishEvent("post.created", event)
-}
-
-func (p *EventPublisher) PublishPostUpdated(event PostUpdatedEvent) error {
-	return p.publishEvent("post.updated", event)
-}
-
-func (p *EventPublisher) PublishPostDeleted(event PostDeletedEvent) error {
-	return p.publishEvent("post.deleted", event)
 }
 
 func (p *EventPublisher) publishEvent(routingKey string, event interface{}) error {

@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CodeId } from "@/components/ui/code-id";
 import { RouteIndicator } from "@/components/ui/route-indicator";
 import { StatusPill, type StatusTone } from "@/components/ui/pill";
 import { Table, TableBody, Td, Th, TableHead, Tr } from "@/components/ui/table";
-import { getRFQ, listQuotes } from "@/lib/rfqs/client";
+import { Button } from "@/components/ui/button";
+import { acceptQuote, getRFQ, listQuotes } from "@/lib/rfqs/client";
 import type { QuoteStatus, RFQStatus } from "@/lib/rfqs/types";
 
 const RFQ_TONE: Record<RFQStatus, StatusTone> = {
@@ -39,6 +41,11 @@ function formatSpecs(specs: Record<string, unknown> | null) {
 }
 
 export function RFQDetailClient({ rfqId }: { rfqId: string }) {
+  const queryClient = useQueryClient();
+  const [accepting, setAccepting] = useState<string | null>(null);
+  const [acceptedQuoteId, setAcceptedQuoteId] = useState<string | null>(null);
+  const [acceptError, setAcceptError] = useState<string | null>(null);
+
   const rfqQuery = useQuery({
     queryKey: ["rfq", rfqId],
     queryFn: () => getRFQ(rfqId),
@@ -51,6 +58,28 @@ export function RFQDetailClient({ rfqId }: { rfqId: string }) {
   });
 
   const rfq = rfqQuery.data;
+  const isAccepted = rfq?.status === "accepted" || rfq?.status === "closed";
+  const alreadyAcceptedId =
+    acceptedQuoteId ??
+    quotesQuery.data?.quotes.find((q) => q.status === "accepted")?.id ??
+    null;
+
+  async function handleAccept(quoteId: string) {
+    setAccepting(quoteId);
+    setAcceptError(null);
+    try {
+      await acceptQuote(rfqId, quoteId);
+      setAcceptedQuoteId(quoteId);
+      await queryClient.invalidateQueries({ queryKey: ["rfq", rfqId] });
+      await queryClient.invalidateQueries({ queryKey: ["rfq-quotes", rfqId] });
+    } catch (err) {
+      setAcceptError((err as Error).message);
+    } finally {
+      setAccepting(null);
+    }
+  }
+
+  const showAcceptSuccess = alreadyAcceptedId && (acceptedQuoteId !== null || isAccepted);
 
   return (
     <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-6 py-6">
@@ -130,6 +159,21 @@ export function RFQDetailClient({ rfqId }: { rfqId: string }) {
         </Card>
       ) : null}
 
+      {showAcceptSuccess ? (
+        <div className="rounded-sm border border-success/40 bg-success/10 px-4 py-3 font-mono text-sm text-foreground">
+          Quote accepted — order created.{" "}
+          <Link href="/orders" className="font-medium text-primary hover:underline">
+            View orders →
+          </Link>
+        </div>
+      ) : null}
+
+      {acceptError ? (
+        <div className="rounded-sm border border-destructive/40 bg-destructive/10 px-4 py-3 font-mono text-sm text-destructive">
+          {acceptError}
+        </div>
+      ) : null}
+
       <Card>
         <CardHeader>
           <CardTitle>Quotes</CardTitle>
@@ -156,19 +200,38 @@ export function RFQDetailClient({ rfqId }: { rfqId: string }) {
                   <Th numeric>Lead time</Th>
                   <Th>Valid until</Th>
                   <Th>Notes</Th>
+                  {!isAccepted ? <Th /> : null}
                 </Tr>
               </TableHead>
               <TableBody>
-                {quotesQuery.data.quotes.map((quote) => (
-                  <Tr key={quote.id}>
-                    <Td><CodeId code={quote.id} size="sm" /></Td>
-                    <Td><StatusPill tone={QUOTE_TONE[quote.status] ?? "neutral"}>{quote.status}</StatusPill></Td>
-                    <Td numeric className="font-mono">{formatMoney(quote.price_usd)}</Td>
-                    <Td numeric className="font-mono">{quote.lead_time_days ? `${quote.lead_time_days}d` : "—"}</Td>
-                    <Td className="font-mono text-xs">{quote.validity_date || "—"}</Td>
-                    <Td className="max-w-[280px] truncate text-xs text-muted-foreground">{quote.supplier_notes || "—"}</Td>
-                  </Tr>
-                ))}
+                {quotesQuery.data.quotes.map((quote) => {
+                  const isThisAccepted = quote.id === alreadyAcceptedId || quote.status === "accepted";
+                  const canAccept = !isAccepted && !alreadyAcceptedId && quote.status === "submitted";
+                  return (
+                    <Tr key={quote.id} className={isThisAccepted ? "bg-success/5" : undefined}>
+                      <Td><CodeId code={quote.id} size="sm" /></Td>
+                      <Td><StatusPill tone={QUOTE_TONE[quote.status] ?? "neutral"}>{quote.status}</StatusPill></Td>
+                      <Td numeric className="font-mono">{formatMoney(quote.price_usd)}</Td>
+                      <Td numeric className="font-mono">{quote.lead_time_days ? `${quote.lead_time_days}d` : "—"}</Td>
+                      <Td className="font-mono text-xs">{quote.validity_date || "—"}</Td>
+                      <Td className="max-w-[280px] truncate text-xs text-muted-foreground">{quote.supplier_notes || "—"}</Td>
+                      {!isAccepted ? (
+                        <Td>
+                          {canAccept ? (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              disabled={accepting === quote.id}
+                              onClick={() => handleAccept(quote.id)}
+                            >
+                              {accepting === quote.id ? "Accepting…" : "Accept"}
+                            </Button>
+                          ) : null}
+                        </Td>
+                      ) : null}
+                    </Tr>
+                  );
+                })}
               </TableBody>
             </Table>
           ) : null}
