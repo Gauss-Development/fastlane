@@ -47,7 +47,8 @@ export interface SubmitManufacturerQuoteParams {
 export interface CreateRFQParams {
   queryText: string;
   parsedSpecs?: ParsedSpecs | null;
-  matchedProductIds: string[];
+  matchedProductIds?: string[];
+  projectId?: string;
   qty: number;
   targetDate?: string;
   shippingAddress?: string;

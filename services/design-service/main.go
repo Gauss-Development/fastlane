@@ -63,10 +63,12 @@ func main() {
 
 	storageClient, err := storage.New(
 		cfg.Storage.Endpoint,
+		cfg.Storage.InternalEndpoint,
 		cfg.Storage.AccessKey,
 		cfg.Storage.SecretKey,
 		cfg.Storage.Bucket,
 		cfg.Storage.UseSSL,
+		cfg.Storage.Region,
 		cfg.Storage.PresignTTL,
 	)
 	if err != nil {

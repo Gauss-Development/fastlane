@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CodeId } from "@/components/ui/code-id";
-import { RouteIndicator } from "@/components/ui/route-indicator";
 import { StatusPill, type StatusTone } from "@/components/ui/pill";
 import { Table, TableBody, Td, Th, TableHead, Tr } from "@/components/ui/table";
 import { listOrders } from "@/lib/orders/client";
@@ -46,10 +45,7 @@ export function OrdersClient() {
     <main className="mx-auto w-full max-w-[1200px] px-6 py-6">
       <Card>
         <CardHeader>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <CardTitle>Orders</CardTitle>
-            <RouteIndicator size="sm" />
-          </div>
+          <CardTitle>Orders</CardTitle>
         </CardHeader>
         <CardContent>
           {ordersQuery.isLoading ? (

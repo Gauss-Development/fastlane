@@ -20,7 +20,8 @@ export async function createRFQ(params: CreateRFQParams): Promise<RFQ> {
     body: JSON.stringify({
       query_text: params.queryText,
       parsed_specs: params.parsedSpecs ?? null,
-      matched_product_ids: params.matchedProductIds,
+      matched_product_ids: params.matchedProductIds ?? [],
+      project_id: params.projectId ?? "",
       qty: params.qty,
       target_date: params.targetDate ?? "",
       shipping_address: params.shippingAddress ?? "",

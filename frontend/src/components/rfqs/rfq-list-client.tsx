@@ -203,13 +203,23 @@ export function RFQListClient() {
       ) : null}
 
       <Card>
-        <CardHeader>
-          <CardTitle>{isManufacturer ? "Incoming RFQs" : "RFQs"}</CardTitle>
-          <CardDescription>
-            {isManufacturer
-              ? "Open quote requests from buyers. Buyer contact and delivery address are shared once a quote is accepted."
-              : "Quote requests sent to verified suppliers. Suppliers respond through magic links — no account needed on their side."}
-          </CardDescription>
+        <CardHeader className="flex flex-row items-start justify-between gap-3">
+          <div>
+            <CardTitle>{isManufacturer ? "Incoming RFQs" : "RFQs"}</CardTitle>
+            <CardDescription>
+              {isManufacturer
+                ? "Open quote requests from buyers. Buyer contact and delivery address are shared once a quote is accepted."
+                : "Quote requests sent to verified suppliers. Suppliers respond through magic links — no account needed on their side."}
+            </CardDescription>
+          </div>
+          {!isManufacturer ? (
+            <Link
+              href="/rfqs/new"
+              className="shrink-0 font-mono text-xs uppercase tracking-[0.08em] text-primary hover:underline"
+            >
+              New request →
+            </Link>
+          ) : null}
         </CardHeader>
         <CardContent>
           {rfqsQuery.isLoading ? (

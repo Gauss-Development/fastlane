@@ -1,20 +1,16 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CodeId } from "@/components/ui/code-id";
-import { RouteIndicator } from "@/components/ui/route-indicator";
 import { StatusPill } from "@/components/ui/pill";
 import { featuredSuppliers } from "@/components/search/demo-data";
 
 export default function SuppliersPage() {
   return (
     <main className="mx-auto w-full max-w-[1200px] px-6 py-6">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1>Suppliers</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Verified Chinese photonics suppliers seeded for the MVP catalog.
-          </p>
-        </div>
-        <RouteIndicator size="md" />
+      <div className="mb-6">
+        <h1>Suppliers</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Verified Chinese photonics suppliers seeded for the MVP catalog.
+        </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

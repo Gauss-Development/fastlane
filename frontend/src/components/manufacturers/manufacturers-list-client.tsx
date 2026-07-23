@@ -9,7 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CodeId } from "@/components/ui/code-id";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RouteIndicator } from "@/components/ui/route-indicator";
 import { StatusPill } from "@/components/ui/pill";
 import { listManufacturers } from "@/lib/manufacturers/client";
 import type { Manufacturer } from "@/lib/manufacturers/types";
@@ -112,12 +111,9 @@ export function ManufacturersListClient() {
 
   return (
     <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-6 py-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">Manufacturers</p>
-          <h1 className="mt-2 text-lg">Verified photonics fabs</h1>
-        </div>
-        <RouteIndicator size="sm" />
+      <div>
+        <p className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">Manufacturers</p>
+        <h1 className="mt-2 text-lg">Verified photonics fabs</h1>
       </div>
 
       <Card>

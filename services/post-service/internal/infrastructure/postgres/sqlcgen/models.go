@@ -9,17 +9,6 @@ import (
 	pgvector_go "github.com/pgvector/pgvector-go"
 )
 
-type Post struct {
-	ID        string           `db:"id" json:"id"`
-	UserID    string           `db:"user_id" json:"user_id"`
-	Title     string           `db:"title" json:"title"`
-	Content   string           `db:"content" json:"content"`
-	Slug      string           `db:"slug" json:"slug"`
-	Published *bool            `db:"published" json:"published"`
-	CreatedAt pgtype.Timestamp `db:"created_at" json:"created_at"`
-	UpdatedAt pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-}
-
 type Product struct {
 	ID           pgtype.UUID         `db:"id" json:"id"`
 	SupplierID   pgtype.UUID         `db:"supplier_id" json:"supplier_id"`
@@ -50,7 +39,7 @@ type Quote struct {
 	Status         string             `db:"status" json:"status"`
 	SubmittedAt    pgtype.Timestamptz `db:"submitted_at" json:"submitted_at"`
 	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	ManufacturerID pgtype.UUID        `db:"manufacturer_id" json:"manufacturer_id"`
+	ManufacturerID *string            `db:"manufacturer_id" json:"manufacturer_id"`
 }
 
 type Rfq struct {

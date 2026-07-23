@@ -2,7 +2,6 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { RouteIndicator } from "@/components/ui/route-indicator";
 
 type ProductPageProps = {
   params: Promise<{
@@ -17,13 +16,8 @@ export default async function ProductPlaceholderPage({ params }: ProductPageProp
     <main className="mx-auto w-full max-w-[960px] px-6 py-6">
       <Card>
         <CardHeader>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <CardTitle>Product detail</CardTitle>
-              <CardDescription className="font-mono">{id}</CardDescription>
-            </div>
-            <RouteIndicator size="sm" />
-          </div>
+          <CardTitle>Product detail</CardTitle>
+          <CardDescription className="font-mono">{id}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">

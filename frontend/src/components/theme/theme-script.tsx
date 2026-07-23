@@ -6,7 +6,7 @@ export function ThemeScript() {
   const script = `
 (function() {
   var key = 'microblog_theme';
-  var pref = localStorage.getItem(key) || 'dark';
+  var pref = localStorage.getItem(key) || 'light';
   var resolved = pref;
   if (pref === 'system') {
     resolved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';

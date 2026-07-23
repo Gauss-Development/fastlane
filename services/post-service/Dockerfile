@@ -1,4 +1,6 @@
-FROM golang:1.24-alpine AS builder
+# syntax=docker/dockerfile:1
+# go.mod requires go >= 1.25.0; base must match (rest of the fleet is 1.24).
+FROM golang:1.25-alpine AS builder
 
 # Install git and ca-certificates
 RUN apk update && apk add --no-cache git ca-certificates && update-ca-certificates
@@ -14,13 +16,16 @@ COPY services/post-service/go.mod services/post-service/go.sum /workspace/servic
 WORKDIR /workspace/services/post-service
 COPY certs/ /tmp/certs/
 RUN find /tmp/certs -name '*.crt' -exec cat {} >> /etc/ssl/certs/ca-certificates.crt \;
-RUN go mod download
+ENV GODEBUG=http2client=0
+ENV GOPROXY=https://proxy.golang.org,direct
+ENV GOFLAGS=-mod=mod
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
 # Copy source code
 COPY services/post-service /workspace/services/post-service
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
 # Final stage
 FROM alpine:latest

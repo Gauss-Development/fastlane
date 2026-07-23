@@ -179,6 +179,18 @@ func (s *DesignService) ConfirmUpload(ctx context.Context, fileID, actorID, cont
 		return nil, appErrors.ErrUnauthorizedAccess
 	}
 
+	// Don't trust the client's claim: verify the object was actually uploaded to
+	// storage (and matches the declared size) before marking it committed.
+	actualSize, err := s.storage.StatObject(ctx, f.ObjectKey)
+	if err != nil {
+		s.logger.Error("design: confirm upload stat object " + f.ObjectKey + ": " + err.Error())
+		return nil, appErrors.ErrUploadIncomplete
+	}
+	if actualSize != sizeBytes {
+		s.logger.Error("design: confirm upload size mismatch for " + f.ObjectKey)
+		return nil, appErrors.ErrUploadIncomplete
+	}
+
 	committed, err := s.files.ConfirmUpload(ctx, fileID, contentSHA256, sizeBytes)
 	if err != nil {
 		if errors.Is(err, postgres.ErrNoRows) {

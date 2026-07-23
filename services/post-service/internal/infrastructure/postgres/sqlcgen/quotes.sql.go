@@ -151,7 +151,7 @@ RETURNING id, rfq_id, supplier_id, product_id, price_usd, lead_time_days, validi
 type InsertManufacturerQuoteParams struct {
 	ID             string         `db:"id" json:"id"`
 	RfqID          string         `db:"rfq_id" json:"rfq_id"`
-	ManufacturerID pgtype.UUID    `db:"manufacturer_id" json:"manufacturer_id"`
+	ManufacturerID *string        `db:"manufacturer_id" json:"manufacturer_id"`
 	ProductID      pgtype.UUID    `db:"product_id" json:"product_id"`
 	PriceUsd       pgtype.Numeric `db:"price_usd" json:"price_usd"`
 	LeadTimeDays   *int32         `db:"lead_time_days" json:"lead_time_days"`

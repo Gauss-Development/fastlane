@@ -37,12 +37,14 @@ type GRPCTLSConfig struct {
 }
 
 type StorageConfig struct {
-	Endpoint   string
-	AccessKey  string
-	SecretKey  string
-	Bucket     string
-	UseSSL     bool
-	PresignTTL time.Duration
+	Endpoint         string // public/browser-reachable host baked into presigned URLs
+	InternalEndpoint string // in-network host for live ops (StatObject) — dialed from the container
+	AccessKey        string
+	SecretKey        string
+	Bucket           string
+	UseSSL           bool
+	Region           string
+	PresignTTL       time.Duration
 }
 
 func Load() (*Config, error) {
@@ -78,8 +80,12 @@ func Load() (*Config, error) {
 			Endpoint:   getEnv("S3_ENDPOINT", "minio:9000"),
 			AccessKey:  os.Getenv("S3_ACCESS_KEY"),
 			SecretKey:  os.Getenv("S3_SECRET_KEY"),
+			InternalEndpoint: getEnv("S3_INTERNAL_ENDPOINT", "minio:9000"),
 			Bucket:     getEnv("S3_BUCKET", "design-files"),
 			UseSSL:     getEnvAsBool("S3_USE_SSL", false),
+			// Region must be set so presigning stays offline (no GetBucketLocation
+			// dial) — S3_ENDPOINT is a browser-reachable host the container can't hit.
+			Region:     getEnv("S3_REGION", "us-east-1"),
 			PresignTTL: getEnvAsDuration("PRESIGN_TTL", 15*time.Minute),
 		},
 	}

@@ -318,6 +318,38 @@ func TestCreateRFQGroupsQuotesBySupplier(t *testing.T) {
 	}
 }
 
+func TestCreateRFQCustomRequestGoesToOpenBoard(t *testing.T) {
+	repo := seededRepo()
+	issuer := &fakeIssuer{}
+	publisher := &fakePublisher{}
+	svc := newTestRFQService(repo, issuer, publisher)
+
+	req := createReq()
+	req.MatchedProductIDs = nil // custom request: buyer picked no catalog products
+
+	rfq, err := svc.CreateRFQ(context.Background(), req)
+	if err != nil {
+		t.Fatalf("CreateRFQ (custom): %v", err)
+	}
+	if rfq.Status != entities.RFQStatusOpen {
+		t.Errorf("status = %q, want open", rfq.Status)
+	}
+
+	// Custom request: no seed suppliers → no pending quotes, no magic links.
+	if quotes, _ := repo.ListQuotesForRFQ(context.Background(), rfq.ID); len(quotes) != 0 {
+		t.Errorf("pending quotes = %d, want 0", len(quotes))
+	}
+	if len(issuer.calls) != 0 {
+		t.Errorf("magic link mints = %d, want 0", len(issuer.calls))
+	}
+	if len(publisher.created) != 1 {
+		t.Fatalf("rfq.created events = %d, want 1", len(publisher.created))
+	}
+	if len(publisher.created[0].Suppliers) != 0 {
+		t.Errorf("event suppliers = %d, want 0", len(publisher.created[0].Suppliers))
+	}
+}
+
 func TestCreateRFQSurvivesMagicLinkFailure(t *testing.T) {
 	repo := seededRepo()
 	publisher := &fakePublisher{}
@@ -337,15 +369,6 @@ func TestCreateRFQSurvivesMagicLinkFailure(t *testing.T) {
 	}
 	if _, err := repo.GetRFQByID(context.Background(), rfq.ID); err != nil {
 		t.Errorf("rfq should still be persisted: %v", err)
-	}
-}
-
-func TestCreateRFQRequiresProducts(t *testing.T) {
-	svc := newTestRFQService(seededRepo(), &fakeIssuer{}, &fakePublisher{})
-	req := createReq()
-	req.MatchedProductIDs = nil
-	if _, err := svc.CreateRFQ(context.Background(), req); err != appErrors.ErrNoMatchedProducts {
-		t.Errorf("err = %v, want ErrNoMatchedProducts", err)
 	}
 }
 

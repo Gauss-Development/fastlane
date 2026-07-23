@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM golang:1.24-alpine AS builder
 
 # Install git and ca-certificates
@@ -13,13 +14,16 @@ COPY certs/ /tmp/certs/
 RUN find /tmp/certs -name '*.crt' -exec cat {} >> /etc/ssl/certs/ca-certificates.crt \;
 
 # Download dependencies
-RUN go mod download
+ENV GODEBUG=http2client=0
+ENV GOPROXY=https://proxy.golang.org,direct
+ENV GOFLAGS=-mod=mod
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
 # Copy source code
 COPY services/notification-service/ .
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
 # Final stage
 FROM alpine:latest

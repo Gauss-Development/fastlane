@@ -271,8 +271,10 @@ func (h *ProjectHandler) GetNDAStatus(c *gin.Context) {
 }
 
 type confirmUploadBody struct {
-	ContentSha256 string `json:"contentSha256"`
-	SizeBytes     int64  `json:"sizeBytes"`
+	// snake_case to match the rest of the API (upload-url's content_type, the
+	// confirm response's content_sha256/size_bytes) and the frontend client.
+	ContentSha256 string `json:"content_sha256"`
+	SizeBytes     int64  `json:"size_bytes"`
 }
 
 // ConfirmUpload handles POST /api/v1/files/:fileId/confirm.

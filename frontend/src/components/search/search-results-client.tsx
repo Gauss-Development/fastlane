@@ -16,7 +16,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Modal } from "@/components/ui/modal";
-import { RouteIndicator } from "@/components/ui/route-indicator";
 import { StatusPill } from "@/components/ui/pill";
 import { createRFQ } from "@/lib/rfqs/client";
 import { search, type ParsedSpecs, type ProductHit, type ProductSpecs } from "@/lib/search/client";
@@ -346,14 +345,11 @@ export function SearchResultsClient({ initialQuery }: { initialQuery: string }) 
               <span className="text-primary">&gt;</span> {submittedQuery || "Describe the part you need"}
             </h1>
           </div>
-          <div className="flex flex-col items-start gap-2 sm:items-end">
-            <RouteIndicator size="sm" />
-            {searchQuery.data?.query_id ? (
-              <span className="font-mono text-xs uppercase text-muted-foreground">
-                Query {searchQuery.data.query_id}
-              </span>
-            ) : null}
-          </div>
+          {searchQuery.data?.query_id ? (
+            <span className="font-mono text-xs uppercase text-muted-foreground">
+              Query {searchQuery.data.query_id}
+            </span>
+          ) : null}
         </div>
 
         <form onSubmit={handleSearchSubmit} className="flex flex-col gap-2 md:flex-row">
@@ -447,21 +443,21 @@ export function SearchResultsClient({ initialQuery }: { initialQuery: string }) 
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <p className="font-mono text-xs uppercase tracking-[0.12em] text-muted-foreground">
-              {searchQuery.data.results.length} ranked matches
+              {(searchQuery.data.results ?? []).length} ranked matches
             </p>
             <p className={cn("font-mono text-xs uppercase tracking-[0.12em]", specOverrides ? "text-primary" : "text-muted-foreground")}>
               {specOverrides ? "Manual spec override active" : "AI extracted specs active"}
             </p>
           </div>
 
-          {searchQuery.data.results.length === 0 ? (
+          {(searchQuery.data.results ?? []).length === 0 ? (
             <Card>
               <CardContent className="py-10 text-center text-sm text-muted-foreground">
                 No products found. Remove a chip or broaden the query.
               </CardContent>
             </Card>
           ) : (
-            searchQuery.data.results.map((hit) => (
+            (searchQuery.data.results ?? []).map((hit) => (
               <ProductResultRow key={hit.id} hit={hit} onQuote={setQuoteHit} />
             ))
           )}

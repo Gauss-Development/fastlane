@@ -1,154 +1,181 @@
 "use client";
 
-import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowRight, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { CodeId } from "@/components/ui/code-id";
-import { Input } from "@/components/ui/input";
-import { RouteIndicator } from "@/components/ui/route-indicator";
-import { StatusPill } from "@/components/ui/pill";
+import { StatusPill, type StatusTone } from "@/components/ui/pill";
 import { Table, TableBody, Td, Th, TableHead, Tr } from "@/components/ui/table";
-import {
-  exampleQueries,
-  featuredSuppliers,
-  liveQuotes,
-  recentRFQs,
-} from "@/components/search/demo-data";
+import { listOpenRFQs, listRFQs } from "@/lib/rfqs/client";
+import type { RFQStatus } from "@/lib/rfqs/types";
+import { listOrders } from "@/lib/orders/client";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
-function buyerDomain(email?: string) {
-  if (!email?.includes("@")) {
-    return "acme-corp.com";
-  }
-  return email.split("@")[1]?.toLowerCase() || "acme-corp.com";
+const RFQ_TONE: Record<RFQStatus, StatusTone> = {
+  open: "info",
+  quoted: "warning",
+  accepted: "success",
+  closed: "neutral",
+};
+
+// Backend order statuses are richer than the frontend union — key by string
+// with a neutral fallback so unmapped states still render.
+const ORDER_TONE: Record<string, StatusTone> = {
+  pending_payment: "warning",
+  paid: "info",
+  in_production: "info",
+  ready_for_qc: "info",
+  qc_in_progress: "info",
+  qc_passed: "success",
+  qc_failed: "destructive",
+  shipped_from_cn: "info",
+  in_transit: "info",
+  out_for_delivery: "info",
+  delivered: "success",
+  completed: "success",
+  cancelled: "destructive",
+  refunded: "destructive",
+  disputed: "warning",
+};
+
+function humanize(status: string) {
+  return status.replace(/_/g, " ");
 }
 
-export function DashboardClient() {
-  const router = useRouter();
-  const user = useAuthStore((state) => state.user);
-  const [query, setQuery] = useState<string>(exampleQueries[0]);
+function age(createdAt: string) {
+  const then = new Date(createdAt).getTime();
+  if (Number.isNaN(then)) return "—";
+  const mins = Math.max(0, Math.round((Date.now() - then) / 60000));
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h`;
+  return `${Math.round(hours / 24)}d`;
+}
 
-  function submitSearch(nextQuery: string = query) {
-    const trimmed = nextQuery.trim();
-    if (!trimmed) return;
-    router.push(`/search?q=${encodeURIComponent(trimmed)}`);
-  }
+function usd(value: number) {
+  return `$${Math.round(value).toLocaleString("en-US")}`;
+}
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    submitSearch();
-  }
+function StatGrid({ items }: { items: { label: string; value: string | number }[] }) {
+  return (
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      {items.map((item) => (
+        <div key={item.label} className="border border-border bg-card p-4">
+          <div className="font-mono text-3xl tabular-nums text-foreground">{item.value}</div>
+          <div className="mt-1 font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
+            {item.label}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SectionHeader({ title, href, cta }: { title: string; href: string; cta: string }) {
+  return (
+    <div className="mb-3 flex items-end justify-between gap-3">
+      <h2 className="text-lg">{title}</h2>
+      <Link
+        href={href}
+        className="font-mono text-xs uppercase tracking-[0.08em] text-primary hover:underline"
+      >
+        {cta} →
+      </Link>
+    </div>
+  );
+}
+
+function Shell({
+  eyebrow,
+  title,
+  description,
+  action,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <main className="mx-auto w-full max-w-[1200px] space-y-6 px-6 py-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="mb-1 font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">
+            {eyebrow}
+          </p>
+          <h1 className="text-2xl">{title}</h1>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>
+        </div>
+        {action}
+      </div>
+      {children}
+    </main>
+  );
+}
+
+function BuyerDashboard({ email }: { email?: string }) {
+  const rfqsQuery = useQuery({
+    queryKey: ["rfqs", "dashboard"],
+    queryFn: () => listRFQs({ limit: 50 }),
+  });
+  const ordersQuery = useQuery({
+    queryKey: ["orders", "dashboard"],
+    queryFn: () => listOrders({ limit: 50 }),
+  });
+
+  const rfqs = rfqsQuery.data?.rfqs ?? [];
+  const orders = ordersQuery.data?.orders ?? [];
+  const openCount = rfqs.filter((r) => r.status === "open").length;
+  const quotedCount = rfqs.filter((r) => r.status === "quoted").length;
 
   return (
-    <div className="min-h-dvh bg-background">
-      <header className="sticky top-0 z-10 border-b border-border bg-background/95 px-6 py-3 backdrop-blur">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="font-mono text-xs uppercase tracking-[0.12em] text-muted-foreground">
-            BUYER • {buyerDomain(user?.email)} • USD • PST
-          </div>
-          <RouteIndicator size="sm" />
+    <Shell
+      eyebrow="Buyer workspace"
+      title="Dashboard"
+      description={`Sourcing overview${email ? ` for ${email}` : ""}. Start from search, track quotes, follow orders to delivery.`}
+      action={
+        <div className="flex gap-2">
+          <Button asChild size="lg" variant="outline" className="font-mono uppercase tracking-[0.08em]">
+            <Link href="/rfqs/new">New request</Link>
+          </Button>
+          <Button asChild size="lg" className="font-mono uppercase tracking-[0.08em]">
+            <Link href="/search">
+              <Search className="size-4" /> New search
+            </Link>
+          </Button>
         </div>
-      </header>
+      }
+    >
+      <StatGrid
+        items={[
+          { label: "Open RFQs", value: openCount },
+          { label: "Awaiting decision", value: quotedCount },
+          { label: "RFQs total", value: rfqsQuery.data?.total ?? rfqs.length },
+          { label: "Orders", value: ordersQuery.data?.total ?? orders.length },
+        ]}
+      />
 
-      <main className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-6 py-6">
-        <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <Card className="border-border-strong">
-            <CardHeader className="gap-5">
-              <div>
-                <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                  Section A — Hybrid Search
-                </p>
-                <CardTitle className="max-w-3xl text-2xl">
-                  Describe the optical component. Fiberlane extracts the specs
-                  and ranks verified Chinese catalog matches.
-                </CardTitle>
+      <section>
+        <SectionHeader title="Recent RFQs" href="/rfqs" cta="All RFQs" />
+        <Card>
+          <CardContent className="p-0">
+            {rfqs.length === 0 ? (
+              <div className="py-10 text-center text-sm text-muted-foreground">
+                No RFQs yet. Run a{" "}
+                <Link href="/search" className="text-primary hover:underline">
+                  search
+                </Link>{" "}
+                and request a quote on a match.
               </div>
-              <RouteIndicator size="lg" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <form onSubmit={handleSubmit} className="flex flex-col gap-3 md:flex-row">
-                <div className="relative min-w-0 flex-1">
-                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-mono text-lg text-primary">
-                    &gt;
-                  </span>
-                  <Input
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Describe the part you need..."
-                    className="h-14 pl-10 font-mono text-base"
-                    aria-label="Search product catalog"
-                  />
-                </div>
-                <Button type="submit" size="lg" className="h-14 font-mono uppercase tracking-[0.08em]">
-                  Search catalog
-                </Button>
-              </form>
-
-              <div className="flex flex-wrap gap-2">
-                {exampleQueries.map((example) => (
-                  <button
-                    key={example}
-                    type="button"
-                    onClick={() => {
-                      setQuery(example);
-                      submitSearch(example);
-                    }}
-                    className="rounded-sm border border-border bg-secondary px-3 py-2 font-mono text-xs uppercase tracking-[0.06em] text-secondary-foreground transition-colors hover:border-primary hover:text-primary"
-                  >
-                    {example}
-                  </button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Live quote feed</CardTitle>
-              <CardDescription>
-                Supplier responses from seeded demo RFQs. Real-time transport comes after RFQ persistence.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {liveQuotes.map((quote) => (
-                <div key={`${quote.rfqId}-${quote.supplier}`} className="border-b border-border pb-4 last:border-b-0 last:pb-0">
-                  <div className="mb-1 flex items-center justify-between gap-3">
-                    <span className="font-mono text-xs uppercase text-muted-foreground">
-                      {quote.receivedAt}
-                    </span>
-                    <span className="font-mono text-sm tabular-nums text-primary">
-                      {quote.price}
-                    </span>
-                  </div>
-                  <p className="font-mono text-sm text-foreground">{quote.part}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {quote.supplier} • {quote.city} • {quote.leadTime}
-                  </p>
-                  <CodeId code={quote.rfqId} size="sm" className="mt-2" />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </section>
-
-        <section className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(380px,1fr)]">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent RFQs</CardTitle>
-              <CardDescription>
-                Dense demo workbench. Rows will link into GAU-251 quote comparison when RFQ persistence lands.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+            ) : (
               <Table>
                 <TableHead>
                   <Tr>
@@ -160,98 +187,191 @@ export function DashboardClient() {
                   </Tr>
                 </TableHead>
                 <TableBody>
-                  {recentRFQs.map((rfq) => (
+                  {rfqs.slice(0, 6).map((rfq) => (
                     <Tr key={rfq.id}>
                       <Td>
-                        <CodeId code={rfq.id} size="sm" />
+                        <Link href={`/rfqs/${encodeURIComponent(rfq.id)}`} className="hover:underline">
+                          <CodeId code={rfq.id} size="sm" />
+                        </Link>
                       </Td>
-                      <Td className="max-w-[360px] truncate font-mono text-xs">
-                        {rfq.query}
-                      </Td>
-                      <Td numeric>{rfq.qty}</Td>
+                      <Td className="max-w-[360px] truncate font-mono text-xs">{rfq.query_text}</Td>
+                      <Td numeric>{rfq.qty || "—"}</Td>
                       <Td>
-                        <StatusPill tone={rfq.tone}>{rfq.status}</StatusPill>
+                        <StatusPill tone={RFQ_TONE[rfq.status]}>{rfq.status}</StatusPill>
                       </Td>
-                      <Td numeric>{rfq.age}</Td>
+                      <Td numeric>{age(rfq.created_at)}</Td>
                     </Tr>
                   ))}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
+            )}
+          </CardContent>
+        </Card>
+      </section>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Operating snapshot</CardTitle>
-              <CardDescription>
-                Cross-border sourcing health for the seeded photonics catalog.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-3">
-              {[
-                ["Verified suppliers", "7"],
-                ["Seeded SKUs", "80+"],
-                ["Median lead time", "10d"],
-                ["Avg on-time rate", "95.9%"],
-              ].map(([label, value]) => (
-                <div key={label} className="border border-border bg-muted/30 p-3">
-                  <div className="font-mono text-2xl tabular-nums">{value}</div>
-                  <div className="mt-1 font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
-                    {label}
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </section>
-
-        <section>
-          <div className="mb-3 flex items-end justify-between gap-3">
-            <div>
-              <h2 className="text-lg">Featured suppliers</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Real Chinese photonics suppliers from the catalog seed.
-              </p>
-            </div>
-            <Link
-              href="/suppliers"
-              className="font-mono text-xs uppercase tracking-[0.08em] text-primary hover:underline"
-            >
-              View supplier surface →
-            </Link>
-          </div>
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            {featuredSuppliers.map((supplier) => (
-              <Card key={supplier.code} className="min-w-[260px]">
-                <CardHeader className="pb-3">
-                  <CodeId code={supplier.code} size="sm" />
-                  <div>
-                    <CardTitle className="text-base">{supplier.name}</CardTitle>
-                    <CardDescription className="font-mono">
-                      {supplier.nameZh} • {supplier.city}
-                    </CardDescription>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
-                  <p className="font-mono text-xs uppercase tracking-[0.08em] text-muted-foreground">
-                    {supplier.capability}
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 font-mono text-xs">
-                    <div>
-                      <div className="text-muted-foreground">ON-TIME</div>
-                      <div className="text-success">{supplier.onTimeRate}</div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground">ORDERS</div>
-                      <div>{supplier.orders}</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
-      </main>
-    </div>
+      <section>
+        <SectionHeader title="Recent orders" href="/orders" cta="All orders" />
+        <Card>
+          <CardContent className="p-0">
+            {orders.length === 0 ? (
+              <div className="py-10 text-center text-sm text-muted-foreground">
+                No orders yet. Accept a quote on an RFQ to create one.
+              </div>
+            ) : (
+              <Table>
+                <TableHead>
+                  <Tr>
+                    <Th>Order</Th>
+                    <Th>Status</Th>
+                    <Th numeric>Total</Th>
+                    <Th numeric>Age</Th>
+                  </Tr>
+                </TableHead>
+                <TableBody>
+                  {orders.slice(0, 6).map((order) => (
+                    <Tr key={order.id}>
+                      <Td>
+                        <Link href={`/orders/${encodeURIComponent(order.id)}`} className="hover:underline">
+                          <CodeId code={order.id} size="sm" />
+                        </Link>
+                      </Td>
+                      <Td>
+                        <StatusPill tone={ORDER_TONE[order.status] ?? "neutral"}>
+                          {humanize(order.status)}
+                        </StatusPill>
+                      </Td>
+                      <Td numeric>{usd(order.total_usd)}</Td>
+                      <Td numeric>{age(order.created_at)}</Td>
+                    </Tr>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </section>
+    </Shell>
   );
+}
+
+function ManufacturerDashboard({ email }: { email?: string }) {
+  const openRfqsQuery = useQuery({
+    queryKey: ["rfqs", "open", "dashboard"],
+    queryFn: () => listOpenRFQs({ limit: 50 }),
+  });
+  const ordersQuery = useQuery({
+    queryKey: ["orders", "dashboard"],
+    queryFn: () => listOrders({ limit: 50 }),
+  });
+
+  const openRfqs = openRfqsQuery.data?.rfqs ?? [];
+  const orders = ordersQuery.data?.orders ?? [];
+
+  return (
+    <Shell
+      eyebrow="Supplier workspace"
+      title="Dashboard"
+      description={`Incoming demand${email ? ` for ${email}` : ""}. Quote open requests and fulfil accepted orders.`}
+      action={
+        <Button asChild size="lg" variant="outline" className="font-mono uppercase tracking-[0.08em]">
+          <Link href="/rfqs">
+            Browse open RFQs <ArrowRight className="size-4" />
+          </Link>
+        </Button>
+      }
+    >
+      <StatGrid
+        items={[
+          { label: "Open RFQs", value: openRfqsQuery.data?.total ?? openRfqs.length },
+          { label: "My orders", value: ordersQuery.data?.total ?? orders.length },
+        ]}
+      />
+
+      <section>
+        <SectionHeader title="Open quote requests" href="/rfqs" cta="Open RFQs" />
+        <Card>
+          <CardContent className="p-0">
+            {openRfqs.length === 0 ? (
+              <div className="py-10 text-center text-sm text-muted-foreground">
+                No open RFQs right now. New quote requests from buyers appear here.
+              </div>
+            ) : (
+              <Table>
+                <TableHead>
+                  <Tr>
+                    <Th>RFQ</Th>
+                    <Th>Request</Th>
+                    <Th numeric>Qty</Th>
+                    <Th numeric>Age</Th>
+                  </Tr>
+                </TableHead>
+                <TableBody>
+                  {openRfqs.slice(0, 6).map((rfq) => (
+                    <Tr key={rfq.id}>
+                      <Td>
+                        <CodeId code={rfq.id} size="sm" />
+                      </Td>
+                      <Td className="max-w-[360px] truncate font-mono text-xs">{rfq.query_text}</Td>
+                      <Td numeric>{rfq.qty || "—"}</Td>
+                      <Td numeric>{age(rfq.created_at)}</Td>
+                    </Tr>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </section>
+
+      <section>
+        <SectionHeader title="My orders" href="/orders" cta="All orders" />
+        <Card>
+          <CardContent className="p-0">
+            {orders.length === 0 ? (
+              <div className="py-10 text-center text-sm text-muted-foreground">
+                No orders yet. Accepted quotes become orders here.
+              </div>
+            ) : (
+              <Table>
+                <TableHead>
+                  <Tr>
+                    <Th>Order</Th>
+                    <Th>Status</Th>
+                    <Th numeric>Total</Th>
+                    <Th numeric>Age</Th>
+                  </Tr>
+                </TableHead>
+                <TableBody>
+                  {orders.slice(0, 6).map((order) => (
+                    <Tr key={order.id}>
+                      <Td>
+                        <Link href={`/orders/${encodeURIComponent(order.id)}`} className="hover:underline">
+                          <CodeId code={order.id} size="sm" />
+                        </Link>
+                      </Td>
+                      <Td>
+                        <StatusPill tone={ORDER_TONE[order.status] ?? "neutral"}>
+                          {humanize(order.status)}
+                        </StatusPill>
+                      </Td>
+                      <Td numeric>{usd(order.total_usd)}</Td>
+                      <Td numeric>{age(order.created_at)}</Td>
+                    </Tr>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </section>
+    </Shell>
+  );
+}
+
+export function DashboardClient() {
+  const user = useAuthStore((state) => state.user);
+  if (user?.role === "manufacturer") {
+    return <ManufacturerDashboard email={user?.email} />;
+  }
+  return <BuyerDashboard email={user?.email} />;
 }

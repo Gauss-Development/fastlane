@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM golang:1.24-alpine AS builder
 
 RUN apk add --no-cache git ca-certificates && update-ca-certificates
@@ -9,10 +10,13 @@ COPY services/search-service/go.mod services/search-service/go.sum /workspace/se
 WORKDIR /workspace/services/search-service
 COPY certs/ /tmp/certs/
 RUN find /tmp/certs -name '*.crt' -exec cat {} >> /etc/ssl/certs/ca-certificates.crt \;
-RUN go mod download
+ENV GODEBUG=http2client=0
+ENV GOPROXY=https://proxy.golang.org,direct
+ENV GOFLAGS=-mod=mod
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
 COPY services/search-service /workspace/services/search-service
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates

@@ -197,12 +197,9 @@ func (r *RFQRepository) SubmitQuote(ctx context.Context, rfqID, supplierID strin
 }
 
 func (r *RFQRepository) InsertManufacturerQuote(ctx context.Context, quote *entities.Quote) (*entities.Quote, error) {
-	mid, err := toUUID(quote.ManufacturerID)
-	if err != nil {
-		return nil, fmt.Errorf("invalid manufacturer id: %w", err)
-	}
 	var productID pgtype.UUID
 	if quote.ProductID != "" {
+		var err error
 		if productID, err = toUUID(quote.ProductID); err != nil {
 			return nil, fmt.Errorf("invalid product id: %w", err)
 		}
@@ -214,7 +211,7 @@ func (r *RFQRepository) InsertManufacturerQuote(ctx context.Context, quote *enti
 	row, err := r.queries.InsertManufacturerQuote(ctx, sqlcgen.InsertManufacturerQuoteParams{
 		ID:             quote.ID,
 		RfqID:          quote.RFQID,
-		ManufacturerID: mid,
+		ManufacturerID: nullableString(quote.ManufacturerID),
 		ProductID:      productID,
 		PriceUsd:       price,
 		LeadTimeDays:   nullableInt32(quote.LeadTimeDays),
@@ -329,7 +326,7 @@ func quoteFromRow(row sqlcgen.Quote) *entities.Quote {
 		ID:             row.ID,
 		RFQID:          row.RfqID,
 		SupplierID:     uuidString(row.SupplierID),
-		ManufacturerID: uuidString(row.ManufacturerID),
+		ManufacturerID: deref(row.ManufacturerID),
 		ProductID:      uuidString(row.ProductID),
 		PriceUSD:       numericFloat(row.PriceUsd),
 		LeadTimeDays:   derefInt32(row.LeadTimeDays),

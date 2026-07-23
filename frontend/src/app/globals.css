@@ -7,7 +7,9 @@
  * Light theme — industrial / utilitarian.
  * Off-white linen background, near-black ink, concrete borders, international
  * orange accent. CN-red and US-navy reserved for data markers only.
+ * Default (paper) — dark is opt-in via the toggle.
  * ------------------------------------------------------------------------- */
+:root,
 [data-theme="light"] {
   --font-size: 15px;
 
@@ -71,7 +73,6 @@
  * Same industrial language inverted: deep ink surfaces, off-white text,
  * steel borders, lifted orange accent. Flat and dense — no glow, no neon.
  * ------------------------------------------------------------------------- */
-:root,
 [data-theme="dark"] {
   --font-size: 15px;
 

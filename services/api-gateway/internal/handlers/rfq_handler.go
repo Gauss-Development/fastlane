@@ -86,10 +86,7 @@ func (h *RFQHandler) CreateRFQ(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusBadRequest, "MISSING_QUERY", "query_text is required")
 		return
 	}
-	if len(body.MatchedProductIDs) == 0 {
-		utils.ErrorResponse(c, http.StatusBadRequest, "MISSING_PRODUCTS", "matched_product_ids must reference at least one product")
-		return
-	}
+	// No product filter: a custom request goes to the open manufacturer board.
 
 	buyerCompany := strings.TrimSpace(body.BuyerCompany)
 	if buyerCompany == "" {
@@ -420,6 +417,7 @@ func rfqToMap(rfq *rfqv1.RFQ, includeBuyer bool) map[string]interface{} {
 		"shipping_address":    rfq.GetShippingAddress(),
 		"notes":               rfq.GetNotes(),
 		"buyer_company":       rfq.GetBuyerCompany(),
+		"project_id":          rfq.GetProjectId(),
 		"created_at":          timestampString(rfq.GetCreatedAt()),
 	}
 	if includeBuyer {

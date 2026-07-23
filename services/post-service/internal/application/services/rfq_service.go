@@ -66,8 +66,36 @@ func (s *RFQService) CreateRFQ(ctx context.Context, req *dto.CreateRFQRequest) (
 	if req.BuyerID == "" || strings.TrimSpace(req.QueryText) == "" {
 		return nil, appErrors.ErrInvalidRFQData
 	}
+
+	// Custom request: no catalog products picked, so there is no seed supplier to
+	// invite. Persist it open and let it surface on the manufacturer board, where
+	// registered manufacturers quote it directly (SubmitManufacturerQuote).
 	if len(req.MatchedProductIDs) == 0 {
-		return nil, appErrors.ErrNoMatchedProducts
+		rfqID, err := s.nextID(ctx, "RFQ", s.repo.NextRFQSeq)
+		if err != nil {
+			s.logger.Error("rfq: allocate id: " + err.Error())
+			return nil, appErrors.ErrRFQCreationFailed
+		}
+		rfq, err := s.repo.CreateRFQ(ctx, &entities.RFQ{
+			ID:              rfqID,
+			BuyerID:         req.BuyerID,
+			BuyerEmail:      req.BuyerEmail,
+			BuyerCompany:    req.BuyerCompany,
+			QueryText:       strings.TrimSpace(req.QueryText),
+			ParsedSpecs:     req.ParsedSpecs,
+			Status:          entities.RFQStatusOpen,
+			Qty:             req.Qty,
+			TargetDate:      req.TargetDate,
+			ShippingAddress: req.ShippingAddress,
+			Notes:           req.Notes,
+			ProjectID:       req.ProjectID,
+		})
+		if err != nil {
+			s.logger.Error("rfq: insert (custom): " + err.Error())
+			return nil, appErrors.ErrRFQCreationFailed
+		}
+		s.publishRFQCreated(rfq, nil, nil)
+		return rfq, nil
 	}
 
 	products, err := s.repo.ListProductsByIDs(ctx, req.MatchedProductIDs)

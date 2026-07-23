@@ -22,5 +22,6 @@ var (
 	ErrNDANotFound        = newErr("NDA_NOT_FOUND", "NDA not found", http.StatusNotFound)
 	ErrUnauthorizedAccess = newErr("UNAUTHORIZED_ACCESS", "You don't have permission to access this resource", http.StatusForbidden)
 	ErrInvalidRequest     = newErr("INVALID_REQUEST", "Invalid request parameters", http.StatusBadRequest)
+	ErrUploadIncomplete   = newErr("UPLOAD_INCOMPLETE", "Uploaded object not found in storage or size mismatch; the upload did not complete", http.StatusBadRequest)
 	ErrServiceUnavailable = newErr("SERVICE_UNAVAILABLE", "Design service temporarily unavailable", http.StatusServiceUnavailable)
 )
